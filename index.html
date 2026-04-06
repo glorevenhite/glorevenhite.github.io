@@ -545,6 +545,22 @@
                             </select>
                         </div>
                         <div>
+                            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1 block">Thông tin liên hệ</label>
+                            <select id="filterContact" style="width: 160px; font-size: 13px; padding: 5px 8px;">
+                                <option value="">Tất cả</option>
+                                <option value="has_email">Có email</option>
+                                <option value="no_email">Không có email</option>
+                                <option value="has_phone">Có SĐT</option>
+                                <option value="no_phone">Không có SĐT</option>
+                                <option value="has_both">Có cả email & SĐT</option>
+                                <option value="has_none">Không có email & SĐT</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1 block">Nguồn (source)</label>
+                            <input type="text" id="filterSource" placeholder="Chứa cụm từ..." style="width: 160px; font-size: 13px; padding: 5px 8px;">
+                        </div>
+                        <div>
                             <label class="text-xs font-semibold text-surface-500 uppercase tracking-wide mb-1 block">NAV từ</label>
                             <input type="number" id="filterNavMin" placeholder="0" step="any" style="width: 120px; font-size: 13px; padding: 5px 8px;">
                         </div>
@@ -1706,185 +1722,85 @@ VD:
                     </div>
                     <div class="help-feature">
                         <div class="hf-title">Đổi mật khẩu</div>
-                        <div class="hf-desc">Bấm nút "Đổi MK" trên thanh header. Nhập mật khẩu cũ để xác minh, sau đó nhập mật khẩu mới (≥ 6 ký tự). Có hiệu lực ngay lập tức.</div>
+                        <div class="hf-desc">Bấm "Đổi MK" trên header. Nhập mật khẩu cũ → mật khẩu mới (≥ 6 ký tự) → xác nhận. Có hiệu lực ngay.</div>
+                        <div class="hf-roles"><span>Tất cả</span></div>
+                    </div>
+                    <div class="help-feature">
+                        <div class="hf-title">Đăng ký thiết bị</div>
+                        <div class="hf-desc">Đăng nhập lần đầu từ máy mới → thiết bị tự đăng ký "Chờ duyệt". Admin phê duyệt trong Quản trị → Quản lý thiết bị. Thiết bị bị chặn không thể truy cập. Admin luôn bypass.</div>
                         <div class="hf-roles"><span>Tất cả</span></div>
                     </div>
                 </div>
 
                 <div class="help-section">
                     <h3>👥 Quản lý Khách hàng</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Xem danh sách khách hàng</div>
-                        <div class="hf-desc">Tab "Khách hàng của tôi" hiển thị KH bạn phụ trách. Tab "Khách hàng nhóm" hiển thị KH của cả team (tùy quyền). Click vào dòng để xem chi tiết.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Thêm khách hàng mới</div>
-                        <div class="hf-desc">Bấm nút "+ Thêm KH" trên toolbar. Nhập thông tin cơ bản: tên, email, SĐT, mã TK chứng khoán, nguồn, NAV, GTGD, phí, trạng thái online. Chọn nhân viên phụ trách.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Chỉnh sửa thông tin KH</div>
-                        <div class="hf-desc">Click vào KH → Modal chi tiết mở ra. Tất cả các trường đều có thể sửa: tên, email, SĐT, mã TK, nguồn, trạng thái, NAV, tổng GTGD, tổng phí, online, ghi chú, tags. Bấm "Lưu tất cả thay đổi" để cập nhật.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Trạng thái hành trình KH</div>
-                        <div class="hf-desc"><strong>Lead</strong> → KH tiềm năng mới. <strong>Contacted</strong> → Đã liên hệ lần đầu. <strong>Qualified</strong> → Xác minh có nhu cầu & khả năng. <strong>Prospect</strong> → Đang tư vấn tích cực. <strong>Active</strong> → Đã mở TK, đang giao dịch. <strong>Inactive</strong> → Ngừng giao dịch. <strong>Closed</strong> → Đã đóng TK.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Tags</div>
-                        <div class="hf-desc">Gắn nhãn tự do cho KH (VD: "VIP", "Cần follow-up", "Margin"). Trong modal chi tiết, gõ tag và bấm "Thêm". Bấm × để xóa tag.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Xem danh sách</div><div class="hf-desc">"Khách hàng của tôi" = KH bạn phụ trách. "Khách hàng nhóm" = KH cả team. Leader xem accordion theo staff. Click dòng → chi tiết.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Thêm KH mới</div><div class="hf-desc">Bấm "+ Thêm KH". Nhập tên, email, SĐT, mã TK, nguồn, NAV, GTGD, phí, online. Chọn nhân viên phụ trách.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Chỉnh sửa KH</div><div class="hf-desc">Click KH → modal chi tiết → sửa tất cả trường → "Lưu tất cả thay đổi".</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Trạng thái hành trình</div><div class="hf-desc"><strong>Lead</strong> → KH mới. <strong>Contacted</strong> → Đã liên hệ. <strong>Qualified</strong> → Xác minh nhu cầu. <strong>Prospect</strong> → Đang tư vấn. <strong>Active</strong> → Đang giao dịch. <strong>Inactive</strong> → Ngừng GD. <strong>Closed</strong> → Đã đóng TK.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Tags & Ghi chú</div><div class="hf-desc">Gắn nhãn tự do (VD: "VIP", "Margin"). Ghi chú dạng văn bản lưu cùng KH.</div><div class="hf-roles"><span>Tất cả</span></div></div>
                 </div>
 
                 <div class="help-section">
-                    <h3>📞 Kênh liên hệ & Lịch sử tương tác</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Kênh liên hệ</div>
-                        <div class="hf-desc">Mỗi KH có thể có nhiều kênh: Điện thoại, Zalo, Email, SMS, Gặp trực tiếp, Khác. Bấm ⭐ để đánh dấu kênh liên hệ thường xuyên nhất. Có thể thêm chi tiết (VD: số Zalo cụ thể).</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Ghi nhận lịch sử liên hệ</div>
-                        <div class="hf-desc">Mỗi lần liên hệ KH, ghi nhận: kênh sử dụng, thời gian, thời lượng (phút), nội dung trao đổi. Lọc theo kênh để xem lịch sử từng loại. Hệ thống tự ghi tên người liên hệ.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
+                    <h3>📞 Liên hệ & Tương tác</h3>
+                    <div class="help-feature"><div class="hf-title">Kênh liên hệ</div><div class="hf-desc">Mỗi KH nhiều kênh: ĐT, Zalo, Email, SMS, Gặp trực tiếp. ⭐ = kênh chính. Bấm "Sửa" để cập nhật.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Ghi nhận liên hệ</div><div class="hf-desc">Modal KH → form ghi nhận: kênh, thời gian, thời lượng, nội dung. Lọc lịch sử theo kênh.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Paste Log nhanh ⚡</div><div class="hf-desc">Bấm "Paste Log" → dán từ Excel. Cột: <code>dd/mm/yyyy, account_number, phone, email, channel, notes</code>. Ít nhất 1 trong account_number/phone/email. Hệ thống tự khớp KH → "Xem trước" → "Ghi nhận".</div><div class="hf-roles"><span>Tất cả</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>🔀 Phân công & Hàng loạt</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Phân công lại KH</div>
-                        <div class="hf-desc">Trong modal chi tiết KH → mục "Phân công lại" → chọn nhân viên mới → bấm "Gán". Lịch sử phân công được ghi nhận tự động.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Cập nhật trạng thái hàng loạt</div>
-                        <div class="hf-desc">Tick chọn nhiều KH → thanh hành động xuất hiện → chọn trạng thái mới → bấm "Đổi trạng thái". Áp dụng cho tất cả KH đã chọn.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Gán hàng loạt</div>
-                        <div class="hf-desc">Tick chọn nhiều KH → chọn nhân viên trong dropdown → bấm "Gán hàng loạt". Tất cả KH được chuyển sang nhân viên đó.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Phân công lại</div><div class="hf-desc">Modal KH → "Phân công lại" → chọn NV → "Gán". Lịch sử tự ghi nhận.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Đổi trạng thái hàng loạt</div><div class="hf-desc">Tick chọn KH → thanh hành động → chọn trạng thái → "Đổi trạng thái".</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Gán hàng loạt</div><div class="hf-desc">Tick KH → chọn NV → "Gán hàng loạt".</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Phân chia tự động 🔮</div><div class="hf-desc">Bấm "Phân chia tự động". <strong>3 nguồn KH:</strong><br>• <strong>Từ bộ lọc:</strong> Lọc trạng thái, phụ trách, NAV, online → "Tải danh sách". Lưu kết quả thành danh sách.<br>• <strong>Từ checkbox:</strong> Dùng KH đã tick ở bảng chính.<br>• <strong>Từ danh sách lưu:</strong> Chọn danh sách tạo trước → "Dùng".<br>Chọn NV nhận → "Xem trước" (KH sắp xếp NAV cao→thấp, round-robin đều) → "Thực hiện".</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Lưu danh sách KH</div><div class="hf-desc">2 cách: (1) Tick checkbox → thanh hành động → "Lưu danh sách". (2) Trong phân chia tự động → sau khi lọc → "Lưu danh sách". Dùng lại cho phân chia hoặc tham khảo.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>🔍 Tìm kiếm & Lọc</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Tìm kiếm nhanh</div>
-                        <div class="hf-desc">Ô tìm kiếm trên toolbar — tìm theo tên, email, SĐT, mã tài khoản. Kết quả cập nhật tự động khi gõ.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Bộ lọc nâng cao</div>
-                        <div class="hf-desc">Bấm nút "Bộ lọc" → mở panel: lọc theo Online/Offline, khoảng NAV, khoảng phí, khoảng ngày tạo. Các bộ lọc hiển thị dạng chip, bấm × để xóa riêng. Nút "Xóa bộ lọc" reset tất cả.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Sắp xếp theo cột</div>
-                        <div class="hf-desc">Click vào tiêu đề cột Tên, Trạng thái, NAV, Online để sắp xếp. Click 1 lần = tăng dần ▲, 2 lần = giảm dần ▼, 3 lần = bỏ sắp xếp.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Tìm kiếm nhanh</div><div class="hf-desc">Ô tìm kiếm toolbar — theo tên, email, SĐT, mã TK. Cập nhật tự động khi gõ.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Bộ lọc nâng cao</div><div class="hf-desc">"Bộ lọc" → Online/Offline, khoảng NAV, khoảng phí, khoảng ngày tạo. Filter chips hiện bộ lọc đang áp dụng, × xóa riêng.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Sắp xếp cột</div><div class="hf-desc">Click tiêu đề Tên, Trạng thái, NAV, Online: 1 lần = ▲, 2 lần = ▼, 3 lần = bỏ.</div><div class="hf-roles"><span>Tất cả</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>📊 Import / Export</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Tải lên CSV</div>
-                        <div class="hf-desc">Bấm nút "CSV" → chọn file .csv. Cột bắt buộc: <code>name</code>. Tùy chọn: <code>email</code>, <code>phone</code>, <code>assigned_to_email</code> (nếu không có hoặc để trống, KH tự động gán cho người upload), <code>status</code>, <code>tags</code> (phân tách bằng ;), <code>account_number</code>, <code>source</code>, <code>nav</code>, <code>total_trade_value</code>, <code>total_fees</code>, <code>online</code> (true/false).</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Xuất CSV</div>
-                        <div class="hf-desc">Bấm nút "Xuất" → tải về file .csv chứa toàn bộ KH đang hiển thị với đầy đủ thông tin.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Paste Log liên hệ nhanh ⚡</div>
-                        <div class="hf-desc">Bấm nút "Paste Log" trên toolbar. Copy danh sách từ Excel / Google Sheets rồi dán trực tiếp. Định dạng cột (tab-separated):<br>
-                        <code>dd/mm/yyyy &nbsp; account_number &nbsp; phone &nbsp; email &nbsp; channel &nbsp; notes</code><br>
-                        Ít nhất 1 trong 3 trường account_number, phone, email phải có giá trị. Hệ thống tự khớp KH theo thông tin, nếu trùng nhiều KH sẽ tạo log cho tất cả. Bấm "Xem trước" để kiểm tra trước khi ghi nhận.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Tải lên CSV</div><div class="hf-desc">Bắt buộc: <code>name</code>. Tùy chọn: <code>email</code>, <code>phone</code>, <code>assigned_to_email</code> (không có = tự gán cho bạn), <code>status</code>, <code>tags</code>(;), <code>account_number</code>, <code>source</code>, <code>nav</code>, <code>total_trade_value</code>, <code>total_fees</code>, <code>online</code>.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Xuất CSV</div><div class="hf-desc">"Xuất" → tải file .csv toàn bộ KH.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>📱 KOL / Marketing</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Quản lý kênh MXH</div>
-                        <div class="hf-desc">Tab "KOL / Marketing" → mục "Kênh MXH của tôi". Thêm các nền tảng (YouTube, TikTok, Facebook, Instagram...) kèm URL, username, số followers. Thêm lại cùng nền tảng sẽ cập nhật thông tin.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Đăng nội dung</div>
-                        <div class="hf-desc">Ghi nhận mỗi bài đăng / video / livestream: tiêu đề, URL, nền tảng, loại nội dung, lượt xem, likes, comments, shares, ngày đăng. Bấm "Sửa" để cập nhật metrics sau.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Dashboard & Bảng xếp hạng</div>
-                        <div class="hf-desc">Admin / Manager / Leader thấy dashboard tổng quan: tổng bài đăng, lượt xem, tương tác, followers. Bảng xếp hạng nhân viên theo lượt xem, tương tác, số bài, hoặc followers — giúp đánh giá ai hoạt động hiệu quả nhất.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Kênh MXH</div><div class="hf-desc">"KOL / Marketing" → "Kênh MXH của tôi". Thêm YouTube, TikTok, Facebook, Instagram, LinkedIn, X, Threads, Finpath. Bấm "Sửa" để cập nhật (upsert).</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Nội dung</div><div class="hf-desc">Ghi nhận bài đăng/video/livestream: tiêu đề, URL, nền tảng, loại, metrics (views/likes/comments/shares). "Sửa" = cập nhật metrics. Lọc theo nền tảng & loại.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Dashboard & Xếp hạng</div><div class="hf-desc">4 thẻ tổng quan. Bảng xếp hạng NV theo views/tương tác/số bài/followers.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>🎯 KPI</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Chỉ tiêu KPI năm</div>
-                        <div class="hf-desc">Admin / Manager / Leader giao 3 chỉ tiêu cho mỗi nhân viên: Doanh thu ròng, Số TK mở mới, iMoney. Tab KPI → "Giao chỉ tiêu" → chọn nhân viên, năm, nhập mục tiêu. Nếu đã có sẽ tự load để cập nhật.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Cập nhật KPI</div>
-                        <div class="hf-desc">Tab KPI → form "Cập nhật KPI". Hai hình thức: <strong>Trong ngày</strong> = số liệu phát sinh ngày đó (hệ thống tự cộng dồn). <strong>Tích lũy YTD</strong> = tổng cộng dồn từ đầu năm (ghi đè tổng). Có thể kết hợp: nhập YTD cuối tuần, rồi nhập daily các ngày tiếp theo.</div>
-                        <div class="hf-roles"><span>Tất cả</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Dashboard KPI nhóm</div>
-                        <div class="hf-desc">Admin / Manager / Leader thấy bảng tổng hợp KPI toàn nhóm: tiến độ từng chỉ tiêu dạng thanh progress, % hoàn thành trung bình. Xanh ≥100%, vàng ≥60%, đỏ &lt;60%.</div>
-                        <div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div>
-                    </div>
+                    <div class="help-feature"><div class="hf-title">Chỉ tiêu năm</div><div class="hf-desc">Giao 3 chỉ tiêu: DT ròng, TK mở mới, iMoney. "Giao chỉ tiêu" → chọn NV, năm. Upsert nếu đã có.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Cập nhật KPI</div><div class="hf-desc"><strong>Trong ngày:</strong> phát sinh ngày đó (cộng dồn). <strong>Tích lũy YTD:</strong> tổng từ đầu năm (ghi đè). Kết hợp được: YTD cuối tuần + daily các ngày sau. Quên ngày nào → chọn lại ngày nhập bù hoặc dùng YTD.</div><div class="hf-roles"><span>Tất cả</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Dashboard KPI nhóm</div><div class="hf-desc">Bảng tổng hợp: 3 progress bars + % trung bình. Xanh ≥100%, vàng ≥60%, đỏ &lt;60%.</div><div class="hf-roles"><span>Admin</span><span>Manager</span><span>Leader</span></div></div>
                 </div>
 
                 <div class="help-section">
-                    <h3>⚙️ Quản trị (Admin)</h3>
-                    <div class="help-feature">
-                        <div class="hf-title">Quản lý thành viên</div>
-                        <div class="hf-desc">Tab "Quản trị" → bảng thành viên. Click vào để chỉnh sửa: tên, vai trò (Staff/Leader/Manager/Admin), quản lý bởi ai. Xem thống kê: số KH, tổng NAV, ngày tạo.</div>
-                        <div class="hf-roles"><span>Admin</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Tạo tài khoản nhân viên</div>
-                        <div class="hf-desc">Tab "Quản trị" → bấm "Tạo tài khoản nhân viên". Nhập tên, email, mật khẩu, vai trò, và người quản lý (reports_to).</div>
-                        <div class="hf-roles"><span>Admin</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Đặt lại mật khẩu thành viên</div>
-                        <div class="hf-desc">Trong modal chỉnh sửa thành viên → mục "Đặt lại mật khẩu". Nhập mật khẩu mới (≥ 6 ký tự) → bấm "Đặt lại". Có hiệu lực ngay.</div>
-                        <div class="hf-roles"><span>Admin</span></div>
-                    </div>
-                    <div class="help-feature">
-                        <div class="hf-title">Tìm KH trùng lặp</div>
-                        <div class="hf-desc">Tab "Quản trị" → bấm "Tìm KH trùng lặp (email)". Hệ thống quét toàn bộ KH và nhóm các bản ghi có cùng email. Cho phép xóa từng bản ghi trùng.</div>
-                        <div class="hf-roles"><span>Admin</span></div>
-                    </div>
+                    <h3>⚙️ Quản trị</h3>
+                    <div class="help-feature"><div class="hf-title">Quản lý thành viên</div><div class="hf-desc">Bảng NV → "Sửa": đổi tên, role, quản lý bởi. Thống kê: số KH, NAV, ngày tạo.</div><div class="hf-roles"><span>Admin</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Tạo tài khoản</div><div class="hf-desc">"Tạo tài khoản nhân viên" → tên, email, MK, role, quản lý bởi.</div><div class="hf-roles"><span>Admin</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Reset mật khẩu</div><div class="hf-desc">Modal sửa NV → "Đặt lại mật khẩu" → MK mới ≥ 6 ký tự → có hiệu lực ngay.</div><div class="hf-roles"><span>Admin</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Quản lý thiết bị</div><div class="hf-desc">Bảng thiết bị: NV, OS/browser/màn hình, trạng thái, login cuối. Duyệt / Chặn / Xóa.</div><div class="hf-roles"><span>Admin</span></div></div>
+                    <div class="help-feature"><div class="hf-title">Tìm KH trùng lặp</div><div class="hf-desc">Quét toàn bộ KH → nhóm cùng email → xóa từng bản ghi trùng.</div><div class="hf-roles"><span>Admin</span></div></div>
                 </div>
 
                 <div class="help-section">
                     <h3>🛡️ Phân quyền</h3>
-                    <div class="help-feature">
-                        <div class="hf-desc" style="line-height:2;">
-                            <strong>Admin</strong> — Toàn quyền: xem tất cả KH, quản lý thành viên, reset mật khẩu, tạo TK, xóa KH/thành viên.<br>
-                            <strong>Manager</strong> — Xem KH do mình quản lý (theo manager_id). Phân công, gán hàng loạt.<br>
-                            <strong>Leader</strong> — Xem KH của mình + KH của staff dưới quyền. Phân công, gán hàng loạt. Accordion view theo từng staff.<br>
-                            <strong>Staff</strong> — Chỉ xem KH được gán cho mình. Cập nhật thông tin, trạng thái, ghi nhận liên hệ.
-                        </div>
-                    </div>
+                    <div class="help-feature"><div class="hf-desc" style="line-height:2;">
+                        <strong>Admin</strong> — Toàn quyền. Không bị kiểm tra thiết bị. Xuất CSV, phân chia tự động, quản lý NV/thiết bị, reset MK.<br>
+                        <strong>Manager</strong> — KH theo manager_id. Phân công, gán/phân chia hàng loạt, giao KPI, xuất CSV, lưu danh sách.<br>
+                        <strong>Leader</strong> — KH mình + staff dưới quyền (accordion). Phân công, giao KPI, xuất CSV, lưu danh sách.<br>
+                        <strong>Staff</strong> — Chỉ KH được gán. Cập nhật KH, ghi nhận liên hệ, upload CSV (tự gán), KPI, KOL. Không xuất CSV.
+                    </div></div>
                 </div>
 
             </div>
@@ -1893,92 +1809,82 @@ VD:
             <div id="helpChangelog" class="help-tab-content" style="display:none;">
 
                 <div class="changelog-entry">
-                    <span class="cl-version">v1.8</span><span class="cl-date">Tháng 4, 2026</span>
+                    <span class="cl-version">v2.0</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Quản lý KPI: giao chỉ tiêu năm (DT ròng, TK mở mới, iMoney)</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Cập nhật KPI hàng ngày hoặc tích lũy YTD — hỗ trợ cả hai hình thức</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Hàm SQL calc_kpi_ytd tự động tính YTD chính xác</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Dashboard KPI nhóm: progress bars, % hoàn thành trung bình</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Phân chia tự động: 3 nguồn (bộ lọc, checkbox, danh sách lưu), round-robin theo NAV, xem trước</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Lưu danh sách KH: tạo từ checkbox hoặc bộ lọc, dùng lại cho phân chia</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Bộ lọc nâng cao trong phân chia: NAV, Online, trạng thái, phụ trách</li>
+                        <li><span class="cl-tag cl-improve">Cải thiện</span> Cập nhật toàn bộ Trợ giúp & Changelog</li>
                     </ul>
                 </div>
-
+                <div class="changelog-entry">
+                    <span class="cl-version">v1.9</span><span class="cl-date">Tháng 4, 2026</span>
+                    <ul class="cl-items list-disc pl-4">
+                        <li><span class="cl-tag cl-new">Mới</span> Đăng ký & phê duyệt thiết bị</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Chống xem mã nguồn (F12, Ctrl+U, DevTools detection)</li>
+                        <li><span class="cl-tag cl-improve">Cải thiện</span> Staff upload CSV + thêm KH (tự gán)</li>
+                        <li><span class="cl-tag cl-improve">Cải thiện</span> Ẩn Xuất CSV cho Staff</li>
+                        <li><span class="cl-tag cl-fix">Sửa lỗi</span> Tải đủ toàn bộ KH (không giới hạn 1000 rows)</li>
+                    </ul>
+                </div>
+                <div class="changelog-entry">
+                    <span class="cl-version">v1.8</span><span class="cl-date">Tháng 4, 2026</span>
+                    <ul class="cl-items list-disc pl-4">
+                        <li><span class="cl-tag cl-new">Mới</span> KPI: chỉ tiêu năm (DT ròng, TK mở mới, iMoney), daily/YTD, dashboard nhóm</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Thêm kênh Finpath, chỉnh sửa kênh MXH</li>
+                    </ul>
+                </div>
                 <div class="changelog-entry">
                     <span class="cl-version">v1.7</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Paste Log liên hệ nhanh — copy từ Excel/Google Sheets, hệ thống tự khớp KH và tạo log hàng loạt</li>
-                        <li><span class="cl-tag cl-improve">Cải thiện</span> Tự động xem trước khi paste dữ liệu, hiển thị KH khớp/không khớp</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Paste Log liên hệ nhanh từ Excel/Google Sheets</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.6</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Trang trợ giúp & hướng dẫn sử dụng</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Nhật ký cập nhật (Changelog)</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Trang trợ giúp & Changelog</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.5</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Đổi mật khẩu cá nhân cho tất cả thành viên</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Admin đặt lại mật khẩu cho thành viên</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Đổi MK cá nhân, Admin reset MK thành viên</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.4</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Module KOL / Marketing: quản lý kênh MXH, nội dung, dashboard xếp hạng</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Theo dõi metrics bài đăng: lượt xem, likes, comments, shares</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Bảng xếp hạng nhân viên theo hiệu quả marketing</li>
+                        <li><span class="cl-tag cl-new">Mới</span> KOL / Marketing: kênh MXH, nội dung, dashboard xếp hạng</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.3</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Kênh liên hệ khách hàng (đánh dấu kênh chính)</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Lịch sử liên hệ/tương tác: ghi nhận thời gian, kênh, nội dung, thời lượng</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Lọc lịch sử liên hệ theo kênh</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Kênh liên hệ KH, lịch sử tương tác</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.2</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Quản lý thành viên cho Admin (xem, sửa, xóa)</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Cập nhật trạng thái hàng loạt</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Bộ lọc nâng cao: NAV, phí, ngày tạo, online</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Sắp xếp bảng bằng click tiêu đề cột</li>
-                        <li><span class="cl-tag cl-new">Mới</span> Filter chips hiển thị bộ lọc đang áp dụng</li>
+                        <li><span class="cl-tag cl-new">Mới</span> Quản lý thành viên, trạng thái hàng loạt, bộ lọc nâng cao, sắp xếp cột</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.1</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Cột NAV, Tổng GTGD, Tổng phí, Online</li>
-                        <li><span class="cl-tag cl-improve">Cải thiện</span> Modal chi tiết KH cho phép sửa tất cả trường</li>
-                        <li><span class="cl-tag cl-improve">Cải thiện</span> Nút "Lưu tất cả thay đổi" thay vì lưu từng trường</li>
-                        <li><span class="cl-tag cl-improve">Cải thiện</span> Dashboard thêm thẻ Online, Tổng NAV, Tổng Phí</li>
+                        <li><span class="cl-tag cl-new">Mới</span> NAV, GTGD, phí, Online. Modal KH sửa tất cả trường.</li>
                     </ul>
                 </div>
-
                 <div class="changelog-entry">
                     <span class="cl-version">v1.0</span><span class="cl-date">Tháng 4, 2026</span>
                     <ul class="cl-items list-disc pl-4">
-                        <li><span class="cl-tag cl-new">Mới</span> Phiên bản đầu tiên — CRM Chứng Khoán</li>
-                        <li>Đăng nhập / phân quyền (Admin, Manager, Leader, Staff)</li>
-                        <li>Quản lý khách hàng: thêm, sửa, xóa, phân công</li>
-                        <li>Import / Export CSV</li>
-                        <li>Lịch sử phân công, tags, ghi chú</li>
-                        <li>Tìm KH trùng lặp</li>
-                        <li>Gán hàng loạt</li>
-                        <li>Kết nối trực tiếp Supabase (không cần backend)</li>
+                        <li><span class="cl-tag cl-new">Mới</span> CRM Chứng Khoán v1.0</li>
+                        <li>Đăng nhập / phân quyền 4 cấp · CRUD KH · CSV · Phân công · Tags · Ghi chú · Tìm trùng · Gán hàng loạt</li>
                     </ul>
                 </div>
 
+            </div>
             </div>
         </div>
     </div>
@@ -2466,6 +2372,19 @@ function getFilteredCustomers(type) {
     if (dateFrom) list = list.filter(c => c.created_at && c.created_at.slice(0, 10) >= dateFrom);
     if (dateTo) list = list.filter(c => c.created_at && c.created_at.slice(0, 10) <= dateTo);
     
+    // Contact info filter
+    const contactFilter = $('filterContact')?.value;
+    if (contactFilter === 'has_email') list = list.filter(c => c.email && c.email.trim());
+    else if (contactFilter === 'no_email') list = list.filter(c => !c.email || !c.email.trim());
+    else if (contactFilter === 'has_phone') list = list.filter(c => c.phone && c.phone.trim());
+    else if (contactFilter === 'no_phone') list = list.filter(c => !c.phone || !c.phone.trim());
+    else if (contactFilter === 'has_both') list = list.filter(c => (c.email && c.email.trim()) && (c.phone && c.phone.trim()));
+    else if (contactFilter === 'has_none') list = list.filter(c => (!c.email || !c.email.trim()) && (!c.phone || !c.phone.trim()));
+
+    // Source filter
+    const sourceFilter = ($('filterSource')?.value || '').trim().toLowerCase();
+    if (sourceFilter) list = list.filter(c => (c.source || '').toLowerCase().includes(sourceFilter));
+    
     // Sorting
     if (sortState.column && sortState.direction) {
         const col = sortState.column;
@@ -2514,6 +2433,9 @@ function updateActiveFilters() {
     if ($('filterFeesMax')?.value) chips.push({ label: `Phí ≤ ${Number($('filterFeesMax').value).toLocaleString('vi-VN')}`, clear: () => { $('filterFeesMax').value = ''; } });
     if ($('filterDateFrom')?.value) chips.push({ label: `Từ ${$('filterDateFrom').value}`, clear: () => { $('filterDateFrom').value = ''; } });
     if ($('filterDateTo')?.value) chips.push({ label: `Đến ${$('filterDateTo').value}`, clear: () => { $('filterDateTo').value = ''; } });
+    const contactLabels = { has_email:'Có email', no_email:'Không email', has_phone:'Có SĐT', no_phone:'Không SĐT', has_both:'Có email & SĐT', has_none:'Không email & SĐT' };
+    if ($('filterContact')?.value) chips.push({ label: contactLabels[$('filterContact').value], clear: () => { $('filterContact').value = ''; } });
+    if ($('filterSource')?.value.trim()) chips.push({ label: `Nguồn: "${$('filterSource').value.trim()}"`, clear: () => { $('filterSource').value = ''; } });
     if (sortState.column) chips.push({ label: `Sắp xếp: ${sortState.column} ${sortState.direction === 'asc' ? '↑' : '↓'}`, clear: () => { sortState.column = null; sortState.direction = null; updateSortHeaders(); } });
     
     if (chips.length === 0) {
@@ -4318,7 +4240,7 @@ function bindEvents() {
         $('filterPanel').classList.toggle('open');
     });
 
-    ['filterOnline', 'filterNavMin', 'filterNavMax', 'filterFeesMin', 'filterFeesMax', 'filterDateFrom', 'filterDateTo'].forEach(id => {
+    ['filterOnline', 'filterContact', 'filterSource', 'filterNavMin', 'filterNavMax', 'filterFeesMin', 'filterFeesMax', 'filterDateFrom', 'filterDateTo'].forEach(id => {
         const el = $(id);
         if (!el) return;
         const evt = el.tagName === 'SELECT' ? 'change' : 'input';
@@ -4330,7 +4252,7 @@ function bindEvents() {
     });
 
     $('clearFiltersBtn').addEventListener('click', () => {
-        ['filterOnline', 'filterNavMin', 'filterNavMax', 'filterFeesMin', 'filterFeesMax', 'filterDateFrom', 'filterDateTo'].forEach(id => {
+        ['filterOnline', 'filterContact', 'filterSource', 'filterNavMin', 'filterNavMax', 'filterFeesMin', 'filterFeesMax', 'filterDateFrom', 'filterDateTo'].forEach(id => {
             const el = $(id);
             if (el) el.value = '';
         });
