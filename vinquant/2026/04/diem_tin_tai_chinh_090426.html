@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Điểm Tin Tài Chính — 09/04/2026</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0D0F14;
+  --surface: #13161D;
+  --surface-2: #1A1E27;
+  --border: #262B38;
+  --border-accent: #3A4158;
+  --text: #E8EAF0;
+  --text-muted: #8B92A8;
+  --text-dim: #5C6380;
+  --accent: #C9A96E;
+  --accent-light: #E4D4A5;
+  --accent-dim: rgba(201,169,110,0.12);
+  --red: #E05252;
+  --green: #4CAF78;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Source Serif 4',Georgia,serif;font-size:16px;line-height:1.75;-webkit-font-smoothing:antialiased;}
+.newsletter{max-width:780px;margin:0 auto;padding:40px 24px 80px;}
+
+.header{text-align:center;padding:48px 0 40px;border-bottom:1px solid var(--border);margin-bottom:40px;position:relative;}
+.header::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:40px;height:3px;background:var(--accent);}
+.header-label{font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:16px;}
+.header h1{font-family:'Playfair Display',serif;font-size:38px;font-weight:800;line-height:1.2;color:var(--text);margin-bottom:12px;}
+.header-date{font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-muted);letter-spacing:0.5px;}
+
+.summary-box{background:linear-gradient(135deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid var(--border);border-left:3px solid var(--accent);border-radius:6px;padding:28px 32px;margin-bottom:44px;}
+.summary-box h3{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:var(--accent);margin-bottom:14px;}
+.summary-box p{font-size:15px;color:var(--text-muted);line-height:1.8;}
+
+.ticker-strip{display:flex;justify-content:space-between;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:16px 12px;margin-bottom:44px;}
+.tick{text-align:center;flex:1;}
+.tick+.tick{border-left:1px solid var(--border);}
+.tick-name{font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px;}
+.tick-value{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:500;color:var(--text);}
+.tick-change{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:2px;}
+.tick-change.up{color:var(--green);}
+.tick-change.down{color:var(--red);}
+
+.section{margin-bottom:44px;}
+.section-tag{display:inline-block;font-family:'DM Sans',sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--accent);background:var(--accent-dim);padding:4px 12px;border-radius:3px;margin-bottom:14px;}
+.section h2{font-family:'Playfair Display',serif;font-size:26px;font-weight:700;line-height:1.3;margin-bottom:18px;color:var(--text);}
+.section p{margin-bottom:16px;color:var(--text-muted);font-size:15.5px;}
+.section p:last-child{margin-bottom:0;}
+
+.highlight{border-left:2px solid var(--accent);padding-left:24px;margin:24px 0;font-style:italic;color:var(--accent-light);font-size:16px;line-height:1.7;}
+
+.data-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:24px 28px;margin:20px 0;}
+.data-card h4{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px;}
+.data-row{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-family:'DM Sans',sans-serif;font-size:14px;}
+.data-row:last-child{border-bottom:none;}
+.data-label{color:var(--text-muted);}
+.data-value{font-family:'JetBrains Mono',monospace;font-weight:500;color:var(--text);}
+.data-value.up{color:var(--green);}
+.data-value.down{color:var(--red);}
+
+.divider{height:1px;background:var(--border);margin:44px 0;position:relative;}
+.divider::after{content:'◆';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:var(--bg);padding:0 16px;color:var(--border-accent);font-size:10px;}
+
+.conclusion{background:linear-gradient(135deg,var(--accent-dim) 0%,transparent 100%);border:1px solid var(--border);border-radius:6px;padding:32px;margin-top:44px;}
+.conclusion h3{font-family:'Playfair Display',serif;font-size:22px;font-weight:700;margin-bottom:16px;color:var(--accent-light);}
+.conclusion p{color:var(--text-muted);font-size:15px;line-height:1.8;}
+
+.footer{text-align:center;padding-top:40px;margin-top:48px;border-top:1px solid var(--border);}
+.footer p{font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);letter-spacing:0.5px;}
+
+@media(max-width:600px){
+  .newsletter{padding:24px 16px 60px;}
+  .header h1{font-size:28px;}
+  .section h2{font-size:22px;}
+  .tick-value{font-size:14px;}
+  .summary-box,.data-card,.conclusion{padding:20px;}
+}
+</style>
+</head>
+<body>
+<div class="newsletter">
+
+  <div class="header">
+    <div class="header-label">Bản Tin Thị Trường</div>
+    <h1>Điểm Tin Tài Chính</h1>
+    <div class="header-date">Thứ Năm, 09 tháng 04 năm 2026 &nbsp;·&nbsp; Phiên lịch sử của VN-Index</div>
+  </div>
+
+  <div class="summary-box">
+    <h3>Tổng Quan Phiên 08/04</h3>
+    <p>
+      Ngừng bắn Mỹ-Iran 2 tuần được công bố đúng 2 giờ trước hạn chót của TT Trump, với Pakistan làm trung gian công khai và Trung Quốc can thiệp ở hậu trường. Phố Wall ghi nhận phiên tăng mạnh nhất của Dow Jones trong 365 ngày: S&P 500 +2,51%, Dow +2,85%, Nasdaq +2,80%. Dầu WTI sụp đổ 16,4% — mức giảm một ngày lớn nhất kể từ tháng 4/2020. Tại Việt Nam, VN-Index lập phiên lịch sử với mức tăng tuyệt đối lớn nhất từ trước đến nay: +79,01 điểm (+4,71%) lên 1.756,55 điểm, nhờ cộng hưởng của ceasefire, xác nhận nâng hạng FTSE và yếu tố lãnh đạo mới.
+    </p>
+  </div>
+
+  <!-- TICKERS -->
+  <div class="ticker-strip">
+    <div class="tick">
+      <div class="tick-name">S&P 500</div>
+      <div class="tick-value">6.782</div>
+      <div class="tick-change up">+2,51%</div>
+    </div>
+    <div class="tick">
+      <div class="tick-name">Dow</div>
+      <div class="tick-value">47.909</div>
+      <div class="tick-change up">+2,85%</div>
+    </div>
+    <div class="tick">
+      <div class="tick-name">WTI</div>
+      <div class="tick-value">94,41</div>
+      <div class="tick-change down">−16,4%</div>
+    </div>
+    <div class="tick">
+      <div class="tick-name">Gold</div>
+      <div class="tick-value">4.722</div>
+      <div class="tick-change up">+0,3%</div>
+    </div>
+    <div class="tick">
+      <div class="tick-name">VN-Index</div>
+      <div class="tick-value">1.756,55</div>
+      <div class="tick-change up">+4,71%</div>
+    </div>
+    <div class="tick">
+      <div class="tick-name">HOSE TK</div>
+      <div class="tick-value">30,4K</div>
+      <div class="tick-change up">+40%</div>
+    </div>
+  </div>
+
+  <!-- I. CEASEFIRE -->
+  <div class="section">
+    <span class="section-tag">Địa Chính Trị</span>
+    <h2>Ngừng bắn 2 tuần: Pakistan trung gian công khai, Trung Quốc can thiệp hậu trường</h2>
+    <p>
+      Đúng 2 giờ trước hạn chót 20h thứ Ba (giờ Mỹ), Tổng thống Donald Trump đã chấp thuận lệnh ngừng bắn 2 tuần với Iran — đảo ngược hoàn toàn tối hậu thư được đưa ra trước đó. Trung gian công khai của thỏa thuận là Pakistan, với Thủ tướng Shehbaz Sharif trực tiếp đề nghị trên mạng xã hội X. Tuy nhiên, theo New York Times dẫn ba nguồn tin Iran, Trung Quốc đã can thiệp vào phút chót yêu cầu Tehran "thể hiện sự linh hoạt" — điều chính TT Trump sau đó đã xác nhận.
+    </p>
+    <p>
+      Động lực đằng sau vai trò của Trung Quốc khá rõ ràng: phần lớn dầu xuất khẩu của Iran đi qua eo biển Hormuz đến Trung Quốc. Với áp lực kinh tế hiện tại, Bắc Kinh không thể để "van dầu" này tiếp tục bị kẹt. Đây không phải lập trường hòa bình lý tưởng, mà là tính toán thực dụng về an ninh năng lượng.
+    </p>
+
+    <div class="highlight">
+      Phố Wall đã đặt tên cho pattern này là "TACO" — Trump Always Chickens Out. Tối hậu thư, hạn chót, rồi lùi bước đúng phút cuối. Thị trường lần này không hoảng loạn như những lần đầu — họ đã hít thở và chờ Pakistan xuất hiện.
+    </div>
+
+    <p>
+      Tuy vậy, thỏa thuận ngừng bắn vẫn chưa ổn định. Chủ tịch Quốc hội Iran Ghalibaf nêu ba vi phạm cụ thể: (1) Israel tiếp tục tấn công Hezbollah tại Lebanon trong khi Pakistan tuyên bố ngừng bắn "ở mọi nơi, bao gồm Lebanon"; (2) drone xâm phạm không phận Iran và bị bắn hạ ở thành phố Lar; (3) Mỹ phủ nhận quyền làm giàu uranium của Tehran. Ngoại trưởng Iran Araghchi đưa ra lập trường dứt khoát: Washington phải chọn giữa ngừng bắn hoặc tiếp tục chiến tranh thông qua Israel — không thể có cả hai. Phó Tổng thống Vance giải thích thẳng thắn: "Lebanon không nằm trong ceasefire. Chúng tôi chưa bao giờ hứa vậy."
+    </p>
+    <p>
+      Đội đàm phán Mỹ sẽ đến Islamabad ngày thứ Bảy 11/4, dẫn đầu bởi Phó TT Vance, Đặc phái viên Steve Witkoff và Jared Kushner — lần đầu Mỹ-Iran ngồi vào bàn đàm phán kể từ khi chiến sự bùng nổ. Song song, TT Trump tuyên bố áp thuế 50% với bất kỳ quốc gia nào cung cấp vũ khí cho Iran. Theo WSJ, Nhà Trắng cũng đang xem xét rút quân khỏi các nước NATO "không hợp tác" và chuyển sang Ba Lan, Romania, Lithuania, Hy Lạp — tiếp tục căng thẳng quan hệ xuyên Đại Tây Dương.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- II. DẦU -->
+  <div class="section">
+    <span class="section-tag">Năng Lượng</span>
+    <h2>Dầu WTI sụp đổ 16,4% — mức giảm một ngày lớn nhất kể từ tháng 4/2020</h2>
+    <p>
+      Giá dầu phản ứng mạnh mẽ với tin ngừng bắn. WTI giảm 16,4% (−18,54 USD) đóng cửa tại 94,41 USD/thùng. Brent giảm 13,3% xuống 94,75 USD/thùng. LNG châu Âu giảm 15%. Đây là mức giảm một ngày lớn nhất của WTI kể từ tháng 4/2020 — thời điểm đỉnh điểm khủng hoảng Covid khi nhu cầu dầu toàn cầu sụp đổ. "Bức tường tâm lý 100 USD" đã chính thức bị phá vỡ sau nhiều tuần trụ vững phía trên.
+    </p>
+
+    <div class="data-card">
+      <h4>Diễn biến dầu thô phiên 08/04</h4>
+      <div class="data-row">
+        <span class="data-label">WTI</span>
+        <span class="data-value down">94,41 USD/thùng (−16,4%)</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Brent</span>
+        <span class="data-value down">94,75 USD/thùng (−13,3%)</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">LNG châu Âu</span>
+        <span class="data-value down">−15%</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Mức giảm lịch sử</span>
+        <span class="data-value">Lớn nhất từ 4/2020</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Ngưỡng theo dõi</span>
+        <span class="data-value">90 USD (xác nhận Hormuz mở)</span>
+      </div>
+    </div>
+
+    <p>
+      Mốc 90 USD/thùng là ngưỡng quan trọng cần theo dõi. Nếu WTI trụ được trên 90 USD, ceasefire vẫn còn chắc. Nếu rơi xuống dưới, nghĩa là Hormuz thực sự được mở và dầu đang normalize — kịch bản tích cực thực sự cho toàn cầu.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- III. FED -->
+  <div class="section">
+    <span class="section-tag">Chính Sách Tiền Tệ</span>
+    <h2>Biên bản FOMC tháng 3: Nhóm hawkish đang lớn dần</h2>
+    <p>
+      Biên bản cuộc họp FOMC tháng 3 công bố ngày 08/4 bị drama ceasefire lấn át nhưng chứa đựng thông điệp quan trọng. Fed vẫn mở cửa cho việc cắt lãi suất, nhưng điều kiện là lạm phát phải giảm theo đúng kỳ vọng. Điểm mới đáng chú ý: nhóm hawkish trong FOMC đang lớn dần. Một số thành viên nói thẳng có "lý lẽ mạnh mẽ cho mô tả hai chiều" — tức Fed có thể tăng lẫn giảm tùy dữ liệu. So với biên bản tháng 1 (chỉ "một vài" thành viên có quan điểm này), tháng 3 đã chuyển sang "một số" — khoảng cách ngữ nghĩa tưởng nhỏ nhưng có ý nghĩa rất lớn trong văn kiện Fed.
+    </p>
+    <p>
+      Tâm điểm dữ liệu tuần này là CPI tháng 3 của Mỹ công bố thứ Sáu — dữ liệu đầu tiên bao trùm giai đoạn chiến sự. Wells Fargo dự báo headline PCE đạt đỉnh 3,7% trong Q2. Nếu CPI thứ Sáu cao hơn kỳ vọng, kịch bản "Fed cắt lãi" sẽ bị đặt dấu hỏi nghiêm túc, và đợt rally đêm qua sẽ bị test. Phiên thứ Năm cũng có PCE tháng 2, GDP Q4 lần cuối, và đấu giá 30Y Treasury 22 tỷ USD — kết quả yếu có thể đẩy yield lên và tạo áp lực.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- IV. WALL STREET -->
+  <div class="section">
+    <span class="section-tag">Thị Trường Mỹ</span>
+    <h2>Dow có ngày tốt nhất trong 365 ngày — Du lịch, hàng không dẫn đầu hồi phục</h2>
+    <p>
+      Thứ Tư 08/4 là phiên tăng mạnh nhất của Dow Jones trong tròn một năm. Dow +2,85% lên 47.909 điểm, S&P 500 +2,51% lên 6.782 điểm (mức đóng cửa cao nhất trong một tháng), Nasdaq +2,80% lên 22.635 điểm — lấy lại toàn bộ mức giảm từ đầu cuộc chiến Iran. Rally mang tính toàn cầu: MSCI toàn cầu +3,24%, STOXX 600 +3,88%, Nikkei +5%, Kospi +7,5%.
+    </p>
+    <p>
+      10 trong 11 nhóm ngành S&P 500 tăng. Dẫn đầu phục hồi là nhóm công nghiệp, truyền thông, vật liệu, và đặc biệt là du lịch, hàng không — những nhóm bị đánh tơi bời nhất khi dầu tăng. Carnival +11,2%, chỉ số hàng không Mỹ +5%. Nhóm năng lượng là ngành DUY NHẤT giảm −3,7% theo dầu: APA Corp −9,8%, LyondellBasell −7,5%.
+    </p>
+    <p>
+      Cùng ngày, Goldman Sachs ra báo cáo chip với khuyến nghị mua Teradyne (highest-conviction vì GPU testing), Applied Materials và AMD; tránh KLA Corp, Onsemi và Arm Holdings (Sell). Hyperscaler capex đang tăng, AI infrastructure spend tiếp tục là động lực chính.
+    </p>
+
+    <div class="highlight">
+      Về kỹ thuật, S&P 500 đã vượt vùng kháng cự 6.700–6.750 và lấy lại SMA 20 ngày. Kháng cự tiếp theo 6.850–6.900. Câu hỏi then chốt: liệu đây có phải Follow-Through Day theo định nghĩa O'Neil, hay chỉ là short-covering? Cần quan sát thêm các phiên tiếp theo với thanh khoản xác nhận.
+    </div>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- V. VÀNG & CRYPTO -->
+  <div class="section">
+    <span class="section-tag">Vàng & Crypto</span>
+    <h2>Vàng tăng nhẹ, crypto im ắng trong ngày risk-on</h2>
+    <p>
+      Spot gold tăng 0,3% lên 4.722 USD/oz. Bạc +1,8% lên 74,24 USD/oz. Vàng tăng khá khiêm tốn trong một ngày risk-on như vậy — điều này hoàn toàn hợp lý: khi dầu sụp đổ, áp lực lạm phát giảm, nhu cầu vàng như hàng rào lạm phát cũng giảm theo, dòng tiền chảy sang cổ phiếu. Vùng hỗ trợ vàng 4.650–4.680, kháng cự 4.800. Nếu CPI thứ Sáu cao hơn kỳ vọng, vàng có thể điều chỉnh về lại 4.300–4.400.
+    </p>
+    <p>
+      Crypto không có biến động đáng kể. Trong môi trường lãi suất vẫn cao và rủi ro địa chính trị còn hiện hữu, khi thị trường chuyển sang risk-on, dòng tiền chảy vào cổ phiếu chứ không phải Bitcoin. Đây không phải tin xấu với crypto dài hạn, mà chỉ là vấn đề timing ngắn hạn trong bối cảnh thanh khoản vĩ mô chưa thuận lợi.
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- VI. VN-INDEX -->
+  <div class="section">
+    <span class="section-tag">Thị Trường Việt Nam</span>
+    <h2>VN-Index lập phiên lịch sử: +79,01 điểm — mức tăng tuyệt đối lớn nhất mọi thời đại</h2>
+    <p>
+      Phiên 08/4 đi vào lịch sử thị trường chứng khoán Việt Nam. VN-Index tăng 79,01 điểm, tương đương +4,71%, đóng cửa tại 1.756,55 điểm — đây là mức tăng tuyệt đối theo điểm số lớn nhất trong toàn bộ lịch sử HoSE. Thanh khoản HoSE đạt gần 30.400 tỷ đồng, cao hơn 40% so với bình quân 20 phiên gần nhất. Dòng tiền nhập cuộc với cường độ rất mạnh.
+    </p>
+
+    <div class="data-card">
+      <h4>VN-Index phiên 08/04 — Kỷ lục lịch sử</h4>
+      <div class="data-row">
+        <span class="data-label">Điểm đóng cửa</span>
+        <span class="data-value up">1.756,55</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Mức tăng tuyệt đối</span>
+        <span class="data-value up">+79,01 điểm (kỷ lục)</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Mức tăng tương đối</span>
+        <span class="data-value up">+4,71%</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">Thanh khoản HoSE</span>
+        <span class="data-value up">30.400 tỷ đồng</span>
+      </div>
+      <div class="data-row">
+        <span class="data-label">So với BQ 20 phiên</span>
+        <span class="data-value up">+40%</span>
+      </div>
+    </div>
+
+    <p>
+      Ba catalyst chính đằng sau phiên lịch sử này: <strong>(1) ceasefire Mỹ-Iran</strong> gỡ bỏ áp lực địa chính trị; <strong>(2) xác nhận từ FTSE Russell</strong> trong báo cáo giữa kỳ về câu chuyện nâng hạng, dự kiến có hiệu lực từ tháng 9/2026 — dù không phải tin mới, nhưng confirmation đủ để kích hoạt dòng tiền sau nhiều tuần tích lũy trong lo âu; và <strong>(3) yếu tố chính trị trong nước</strong> với lần đầu tiên Việt Nam có một lãnh đạo kiêm nhiệm Tổng Bí thư và Chủ tịch nước, cùng kỳ vọng vào tân Thủ tướng có nền tảng kinh tế vững (nguyên Thống đốc NHNN với thành tích ổn định tỷ giá, lạm phát và thị trường bất động sản trong nhiệm kỳ trước).
+    </p>
+  </div>
+
+  <div class="divider"></div>
+
+  <!-- VII. CHIẾN LƯỢC -->
+  <div class="section">
+    <span class="section-tag">Chiến Lược Phiên 09/04</span>
+    <h2>Tích lũy dài hạn — tránh mua đuổi theo cảm xúc</h2>
+    <p>
+      Sau phiên tăng lịch sử, VN-Index sẽ tiếp cận các vùng kháng cự kỹ thuật và nhiều khả năng xuất hiện rung lắc. Đây là diễn biến bình thường và lành mạnh. Nhà đầu tư không nên mua đuổi theo cảm xúc tại các vùng đỉnh, đồng thời cũng không nên quá tập trung vào các biến số ngắn hạn như tỷ giá hay lãi suất nếu khung thời gian đầu tư của bản thân là trung-dài hạn (tới năm 2027).
+    </p>
+    <p>
+      <strong>Chiến lược ưu tiên:</strong> Trong bối cảnh lãi suất cao giúp tạo ra "giá rẻ tương đối" cho những doanh nghiệp chất lượng, đây là giai đoạn phù hợp để áp dụng phương pháp Payback Time của Phil Town — tìm kiếm các doanh nghiệp đầu ngành đang về vùng giá hấp dẫn khi thị trường còn nhiều bất định, để tích lũy theo kế hoạch thay vì mua đuổi. Các cổ phiếu có nền giá tốt và câu chuyện cơ bản rõ ràng vẫn là lựa chọn ưu tiên cho khung thời gian 2026–2027.
+    </p>
+  </div>
+
+  <!-- CONCLUSION -->
+  <div class="conclusion">
+    <h3>Điểm Theo Dõi Quan Trọng</h3>
+    <p>
+      Ceasefire là tin tốt nhưng chưa phải kết thúc — cần theo dõi sát các tín hiệu trong 2 tuần tới. Bốn mốc then chốt: (1) đàm phán Islamabad thứ Bảy 11/4 với đội Vance-Witkoff-Kushner; (2) Iran có rút các tuyên bố vi phạm liên quan tới Lebanon và drone hay không; (3) CPI Mỹ tháng 3 công bố thứ Sáu — dữ liệu quyết định hướng đi của Fed và toàn thị trường trong tháng 4; và (4) thanh khoản VN-Index các phiên kế tiếp có giữ được trên 25.000 tỷ đồng hay không.
+    </p>
+    <p style="margin-top:14px;color:var(--accent-light);font-weight:600;">
+      Phiên tăng lịch sử là cây cầu — nhưng đừng quên quan sát kỹ mặt nước bên dưới. Kỷ luật và chọn lọc vẫn là ưu tiên hàng đầu.
+    </p>
+  </div>
+
+  <div class="footer">
+    <p>Điểm Tin Tài Chính — 09/04/2026</p>
+    <p style="margin-top:6px;">Nội dung chỉ mang tính chất tham khảo, không phải khuyến nghị đầu tư.</p>
+  </div>
+
+</div>
+</body>
+</html>
