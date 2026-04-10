@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VINCAP Data Uploader</title>
+<title>VINCAP Data Manager</title>
 
 <!-- Firebase SDKs -->
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
@@ -23,7 +23,6 @@
     --bg-card-hover: #1a2332;
     --bg-input: #0d1220;
     --border: #1e2a3a;
-    --border-focus: #3b82f6;
     --text-primary: #e2e8f0;
     --text-secondary: #8899aa;
     --text-muted: #556677;
@@ -42,788 +41,534 @@
     --radius: 10px;
     --shadow: 0 4px 24px rgba(0,0,0,0.3);
   }
-
   * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    font-family: 'DM Sans', sans-serif;
-    background: var(--bg-primary);
-    color: var(--text-primary);
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
-
-  /* ── Background texture ── */
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
   body::before {
-    content: '';
-    position: fixed; inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.06) 0%, transparent 60%),
-      radial-gradient(ellipse at 80% 100%, rgba(168,85,247,0.04) 0%, transparent 60%);
+    content: ''; position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 0%, rgba(59,130,246,0.06) 0%, transparent 60%), radial-gradient(ellipse at 80% 100%, rgba(168,85,247,0.04) 0%, transparent 60%);
     pointer-events: none; z-index: 0;
   }
-
   .app { position: relative; z-index: 1; }
 
-  /* ── Header ── */
-  .header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 32px;
-    border-bottom: 1px solid var(--border);
-    backdrop-filter: blur(12px);
-    background: rgba(10, 14, 23, 0.8);
-    position: sticky; top: 0; z-index: 100;
-  }
-  .logo {
-    display: flex; align-items: center; gap: 10px;
-    font-weight: 700; font-size: 18px; letter-spacing: -0.5px;
-  }
-  .logo-icon {
-    width: 32px; height: 32px; border-radius: 8px;
-    background: linear-gradient(135deg, var(--accent), #a855f7);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 14px; font-weight: 700; color: #fff;
-  }
-  .user-info {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 13px; color: var(--text-secondary);
-  }
-  .btn-logout {
-    background: transparent; border: 1px solid var(--border);
-    color: var(--text-secondary); padding: 6px 14px; border-radius: 6px;
-    cursor: pointer; font-size: 12px; font-family: inherit;
-    transition: all 0.2s;
-  }
-  .btn-logout:hover { border-color: var(--danger); color: var(--danger); }
+  /* Header */
+  .header { display:flex; align-items:center; justify-content:space-between; padding:16px 32px; border-bottom:1px solid var(--border); backdrop-filter:blur(12px); background:rgba(10,14,23,0.8); position:sticky; top:0; z-index:100; }
+  .logo { display:flex; align-items:center; gap:10px; font-weight:700; font-size:18px; letter-spacing:-0.5px; }
+  .logo-icon { width:32px; height:32px; border-radius:8px; background:linear-gradient(135deg,var(--accent),#a855f7); display:flex; align-items:center; justify-content:center; font-size:14px; font-weight:700; color:#fff; }
+  .user-info { display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text-secondary); }
+  .btn-logout { background:transparent; border:1px solid var(--border); color:var(--text-secondary); padding:6px 14px; border-radius:6px; cursor:pointer; font-size:12px; font-family:inherit; transition:all 0.2s; }
+  .btn-logout:hover { border-color:var(--danger); color:var(--danger); }
 
-  /* ── Screens ── */
-  .screen { display: none; }
-  .screen.active { display: block; }
+  /* Screens */
+  .screen { display:none; } .screen.active { display:block; }
 
-  /* ── Login ── */
-  .login-wrapper {
-    display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; padding: 24px;
-  }
-  .login-card {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: 16px; padding: 48px 40px; width: 100%; max-width: 400px;
-    box-shadow: var(--shadow);
-  }
-  .login-card h1 {
-    font-size: 24px; font-weight: 700; margin-bottom: 4px;
-    letter-spacing: -0.5px;
-  }
-  .login-card p { color: var(--text-secondary); font-size: 14px; margin-bottom: 32px; }
-  .form-group { margin-bottom: 20px; }
-  .form-group label {
-    display: block; font-size: 12px; font-weight: 600;
-    color: var(--text-secondary); margin-bottom: 6px;
-    text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .form-input {
-    width: 100%; padding: 12px 14px; border-radius: 8px;
-    border: 1px solid var(--border); background: var(--bg-input);
-    color: var(--text-primary); font-family: inherit; font-size: 14px;
-    transition: border-color 0.2s;
-  }
-  .form-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-glow); }
-  .form-input::placeholder { color: var(--text-muted); }
+  /* Login */
+  .login-wrapper { display:flex; align-items:center; justify-content:center; min-height:100vh; padding:24px; }
+  .login-card { background:var(--bg-card); border:1px solid var(--border); border-radius:16px; padding:48px 40px; width:100%; max-width:400px; box-shadow:var(--shadow); }
+  .login-card h1 { font-size:24px; font-weight:700; margin-bottom:4px; }
+  .login-card p { color:var(--text-secondary); font-size:14px; margin-bottom:32px; }
+  .form-group { margin-bottom:20px; }
+  .form-group label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:6px; text-transform:uppercase; letter-spacing:0.5px; }
+  .form-input { width:100%; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); font-family:inherit; font-size:14px; transition:border-color 0.2s; }
+  .form-input:focus { outline:none; border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-glow); }
+  .form-input::placeholder { color:var(--text-muted); }
+  .btn-primary { width:100%; padding:13px; border:none; border-radius:8px; background:var(--accent); color:#fff; font-family:inherit; font-size:14px; font-weight:600; cursor:pointer; transition:background 0.2s; margin-top:8px; }
+  .btn-primary:hover { background:var(--accent-hover); }
+  .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
+  .error-msg { background:var(--danger-bg); border:1px solid rgba(239,68,68,0.2); color:var(--danger); padding:10px 14px; border-radius:8px; font-size:13px; margin-bottom:16px; display:none; }
 
-  .btn-primary {
-    width: 100%; padding: 13px; border: none; border-radius: 8px;
-    background: var(--accent); color: #fff; font-family: inherit;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: background 0.2s; margin-top: 8px;
-  }
-  .btn-primary:hover { background: var(--accent-hover); }
-  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  /* Main */
+  .main { max-width:1200px; margin:0 auto; padding:32px; }
 
-  .error-msg {
-    background: var(--danger-bg); border: 1px solid rgba(239,68,68,0.2);
-    color: var(--danger); padding: 10px 14px; border-radius: 8px;
-    font-size: 13px; margin-bottom: 16px; display: none;
-  }
+  /* Tabs */
+  .tab-nav { display:flex; gap:0; margin-bottom:32px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .tab-btn { flex:1; padding:14px 20px; text-align:center; font-size:14px; font-weight:600; color:var(--text-muted); background:transparent; border:none; cursor:pointer; border-right:1px solid var(--border); font-family:inherit; transition:all 0.2s; }
+  .tab-btn:last-child { border-right:none; }
+  .tab-btn.active { background:var(--accent-glow); color:var(--accent); }
+  .tab-btn:hover:not(.active) { color:var(--text-secondary); }
+  .tab-panel { display:none; } .tab-panel.active { display:block; }
 
-  /* ── Main Layout ── */
-  .main { max-width: 1200px; margin: 0 auto; padding: 32px; }
+  /* Steps */
+  .steps { display:flex; gap:0; margin-bottom:32px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
+  .step { flex:1; padding:14px 20px; text-align:center; font-size:13px; font-weight:500; color:var(--text-muted); border-right:1px solid var(--border); transition:all 0.3s; }
+  .step:last-child { border-right:none; }
+  .step.active { background:var(--accent-glow); color:var(--accent); }
+  .step.done { background:var(--success-bg); color:var(--success); }
+  .step-num { display:inline-flex; align-items:center; justify-content:center; width:24px; height:24px; border-radius:50%; background:var(--border); font-size:12px; font-weight:700; margin-right:8px; vertical-align:middle; }
+  .step.active .step-num { background:var(--accent); color:#fff; }
+  .step.done .step-num { background:var(--success); color:#fff; }
 
-  /* ── Steps indicator ── */
-  .steps {
-    display: flex; align-items: center; gap: 0; margin-bottom: 40px;
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden;
-  }
-  .step {
-    flex: 1; padding: 16px 20px; text-align: center;
-    font-size: 13px; font-weight: 500; color: var(--text-muted);
-    border-right: 1px solid var(--border);
-    transition: all 0.3s;
-  }
-  .step:last-child { border-right: none; }
-  .step.active { background: var(--accent-glow); color: var(--accent); }
-  .step.done { background: var(--success-bg); color: var(--success); }
-  .step-num {
-    display: inline-flex; align-items: center; justify-content: center;
-    width: 24px; height: 24px; border-radius: 50%;
-    background: var(--border); font-size: 12px; font-weight: 700;
-    margin-right: 8px; vertical-align: middle;
-  }
-  .step.active .step-num { background: var(--accent); color: #fff; }
-  .step.done .step-num { background: var(--success); color: #fff; }
+  /* Upload */
+  .upload-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin-bottom:24px; }
+  @media(max-width:768px){.upload-grid{grid-template-columns:1fr;}}
+  .upload-card { background:var(--bg-card); border:2px dashed var(--border); border-radius:var(--radius); padding:28px 20px; text-align:center; cursor:pointer; transition:all 0.25s; }
+  .upload-card:hover { border-color:var(--text-muted); background:var(--bg-card-hover); }
+  .upload-card.loaded { border-style:solid; }
+  .upload-card.loaded.hose { border-color:var(--hose); }
+  .upload-card.loaded.hnx { border-color:var(--hnx); }
+  .upload-card.loaded.upcom { border-color:var(--upcom); }
+  .upload-card input[type="file"] { display:none; }
+  .upload-exchange { font-size:11px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; margin-bottom:6px; }
+  .upload-card.hose .upload-exchange { color:var(--hose); }
+  .upload-card.hnx .upload-exchange { color:var(--hnx); }
+  .upload-card.upcom .upload-exchange { color:var(--upcom); }
+  .upload-icon { font-size:24px; margin-bottom:6px; opacity:0.4; }
+  .upload-label { font-size:13px; color:var(--text-secondary); }
+  .upload-status { font-family:'JetBrains Mono',monospace; font-size:12px; margin-top:6px; color:var(--success); }
 
-  /* ── Upload Area ── */
-  .upload-grid {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-    margin-bottom: 32px;
-  }
-  @media (max-width: 768px) { .upload-grid { grid-template-columns: 1fr; } }
+  /* Shared form */
+  .row { display:flex; align-items:center; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+  .row label { font-size:13px; font-weight:600; color:var(--text-secondary); white-space:nowrap; }
+  .date-input,.select-input { padding:10px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); font-family:'JetBrains Mono',monospace; font-size:14px; }
+  .select-input { font-family:'DM Sans',sans-serif; cursor:pointer; min-width:160px; }
+  .date-input:focus,.select-input:focus { outline:none; border-color:var(--accent); }
+  .btn { padding:10px 22px; border:none; border-radius:8px; font-family:inherit; font-size:13px; font-weight:600; cursor:pointer; transition:all 0.2s; }
+  .btn-accent { background:var(--accent); color:#fff; } .btn-accent:hover { background:var(--accent-hover); } .btn-accent:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-success { background:var(--success); color:#fff; } .btn-success:hover { background:#059669; } .btn-success:disabled { opacity:0.4; cursor:not-allowed; }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text-secondary); } .btn-outline:hover { border-color:var(--text-secondary); color:var(--text-primary); }
 
-  .upload-card {
-    background: var(--bg-card); border: 2px dashed var(--border);
-    border-radius: var(--radius); padding: 32px 20px;
-    text-align: center; cursor: pointer; transition: all 0.25s;
-    position: relative; overflow: hidden;
-  }
-  .upload-card:hover { border-color: var(--text-muted); background: var(--bg-card-hover); }
-  .upload-card.loaded { border-style: solid; }
-  .upload-card.loaded.hose { border-color: var(--hose); }
-  .upload-card.loaded.hnx { border-color: var(--hnx); }
-  .upload-card.loaded.upcom { border-color: var(--upcom); }
-  .upload-card input[type="file"] { display: none; }
+  /* Results table */
+  .results-panel { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:20px; }
+  .results-header { display:flex; align-items:center; justify-content:space-between; padding:14px 20px; border-bottom:1px solid var(--border); }
+  .results-header h3 { font-size:15px; font-weight:600; }
+  .results-stats { display:flex; gap:16px; font-size:12px; font-family:'JetBrains Mono',monospace; }
+  .stat { display:flex; align-items:center; gap:4px; }
+  .stat-dot { width:8px; height:8px; border-radius:50%; }
+  .results-table-wrap { max-height:420px; overflow:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+  .results-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .results-table thead { position:sticky; top:0; z-index:2; }
+  .results-table th { background:var(--bg-primary); padding:10px 12px; text-align:left; font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+  .results-table td { padding:8px 12px; border-bottom:1px solid var(--border); font-family:'JetBrains Mono',monospace; font-size:12px; white-space:nowrap; }
+  .results-table tbody tr:hover { background:var(--bg-card-hover); }
+  .ticker-cell { font-weight:600; color:var(--accent); }
+  .zero-vol td { color:var(--text-muted); }
 
-  .upload-exchange {
-    font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-    text-transform: uppercase; margin-bottom: 8px;
-  }
-  .upload-card.hose .upload-exchange { color: var(--hose); }
-  .upload-card.hnx .upload-exchange { color: var(--hnx); }
-  .upload-card.upcom .upload-exchange { color: var(--upcom); }
+  /* Query card */
+  .query-card { background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); padding:24px; margin-bottom:24px; }
+  .query-card h3 { font-size:14px; font-weight:600; margin-bottom:16px; }
+  .ticker-input-area { width:100%; min-height:60px; padding:12px 14px; border-radius:8px; border:1px solid var(--border); background:var(--bg-input); color:var(--text-primary); font-family:'JetBrains Mono',monospace; font-size:13px; resize:vertical; }
+  .ticker-input-area:focus { outline:none; border-color:var(--accent); }
+  .ticker-input-area::placeholder { color:var(--text-muted); }
+  .hint { font-size:11px; color:var(--text-muted); margin-top:6px; }
+  .ticker-file-row { display:flex; align-items:center; gap:12px; margin-top:10px; }
+  .ticker-file-label { padding:8px 16px; border-radius:6px; border:1px dashed var(--border); font-size:12px; color:var(--text-secondary); cursor:pointer; transition:all 0.2s; }
+  .ticker-file-label:hover { border-color:var(--accent); color:var(--accent); }
+  .ticker-file-status { font-size:12px; color:var(--success); font-family:'JetBrains Mono',monospace; }
 
-  .upload-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.4; }
-  .upload-label { font-size: 13px; color: var(--text-secondary); }
-  .upload-status {
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    margin-top: 8px; color: var(--success);
-  }
+  /* Column checks */
+  .col-checks { display:flex; flex-wrap:wrap; gap:6px; margin-top:12px; }
+  .col-check { display:flex; align-items:center; gap:5px; padding:6px 12px; border-radius:6px; background:var(--bg-input); border:1px solid var(--border); font-size:12px; color:var(--text-secondary); cursor:pointer; transition:all 0.2s; user-select:none; }
+  .col-check:hover { border-color:var(--text-muted); }
+  .col-check input { display:none; }
+  .col-check.checked { background:var(--accent-glow); border-color:var(--accent); color:var(--accent); }
 
-  /* ── Date picker row ── */
-  .date-row {
-    display: flex; align-items: center; gap: 16px; margin-bottom: 32px;
-    flex-wrap: wrap;
-  }
-  .date-row label { font-size: 13px; font-weight: 600; color: var(--text-secondary); }
-  .date-input {
-    padding: 10px 14px; border-radius: 8px; border: 1px solid var(--border);
-    background: var(--bg-input); color: var(--text-primary);
-    font-family: 'JetBrains Mono', monospace; font-size: 14px;
-  }
-  .date-input:focus { outline: none; border-color: var(--accent); }
+  /* Progress */
+  .progress-wrap { margin-top:16px; display:none; }
+  .progress-bar-bg { height:6px; background:var(--border); border-radius:3px; overflow:hidden; }
+  .progress-bar { height:100%; background:var(--success); border-radius:3px; width:0%; transition:width 0.3s; }
+  .progress-text { font-size:12px; color:var(--text-secondary); margin-top:8px; font-family:'JetBrains Mono',monospace; }
 
-  .btn-process {
-    padding: 12px 28px; border: none; border-radius: 8px;
-    background: var(--accent); color: #fff; font-family: inherit;
-    font-size: 14px; font-weight: 600; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-process:hover { background: var(--accent-hover); }
-  .btn-process:disabled { opacity: 0.4; cursor: not-allowed; }
+  /* Config notice */
+  .config-notice { background:var(--warning-bg); border:1px solid rgba(245,158,11,0.2); border-radius:var(--radius); padding:16px 20px; margin-bottom:24px; font-size:13px; color:var(--warning); line-height:1.7; }
+  .config-notice code { background:rgba(0,0,0,0.3); padding:2px 6px; border-radius:4px; font-family:'JetBrains Mono',monospace; font-size:12px; }
 
-  /* ── Results ── */
-  .results-panel {
-    background: var(--bg-card); border: 1px solid var(--border);
-    border-radius: var(--radius); overflow: hidden; margin-bottom: 24px;
-  }
-  .results-header {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid var(--border);
-  }
-  .results-header h3 { font-size: 15px; font-weight: 600; }
-  .results-stats {
-    display: flex; gap: 16px; font-size: 12px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-  .stat { display: flex; align-items: center; gap: 4px; }
-  .stat-dot {
-    width: 8px; height: 8px; border-radius: 50%;
-  }
+  /* Toast */
+  .toast { position:fixed; bottom:24px; right:24px; padding:14px 20px; border-radius:10px; font-size:13px; font-weight:500; box-shadow:0 8px 32px rgba(0,0,0,0.4); transform:translateY(100px); opacity:0; transition:all 0.3s ease; z-index:9999; }
+  .toast.show { transform:translateY(0); opacity:1; }
+  .toast.success { background:var(--success); color:#fff; }
+  .toast.error { background:var(--danger); color:#fff; }
 
-  .results-table-wrap {
-    max-height: 420px; overflow: auto;
-    scrollbar-width: thin;
-    scrollbar-color: var(--border) transparent;
-  }
-  .results-table {
-    width: 100%; border-collapse: collapse; font-size: 13px;
-  }
-  .results-table thead { position: sticky; top: 0; z-index: 2; }
-  .results-table th {
-    background: var(--bg-primary); padding: 10px 12px;
-    text-align: left; font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: 0.5px;
-    color: var(--text-muted); border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  .results-table td {
-    padding: 8px 12px; border-bottom: 1px solid var(--border);
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-    white-space: nowrap;
-  }
-  .results-table tbody tr:hover { background: var(--bg-card-hover); }
-  .results-table .ticker-cell { font-weight: 600; color: var(--accent); }
-  .results-table .zero-vol { color: var(--text-muted); }
-
-  /* ── Action buttons ── */
-  .action-row {
-    display: flex; gap: 12px; flex-wrap: wrap;
-  }
-  .btn-upload-db {
-    padding: 14px 32px; border: none; border-radius: 8px;
-    background: var(--success); color: #fff; font-family: inherit;
-    font-size: 14px; font-weight: 700; cursor: pointer;
-    transition: all 0.2s; display: flex; align-items: center; gap: 8px;
-  }
-  .btn-upload-db:hover { background: #059669; }
-  .btn-upload-db:disabled { opacity: 0.4; cursor: not-allowed; }
-
-  .btn-download {
-    padding: 14px 24px; border: 1px solid var(--border); border-radius: 8px;
-    background: transparent; color: var(--text-secondary); font-family: inherit;
-    font-size: 14px; font-weight: 500; cursor: pointer;
-    transition: all 0.2s;
-  }
-  .btn-download:hover { border-color: var(--text-secondary); color: var(--text-primary); }
-
-  /* ── Progress ── */
-  .progress-wrap {
-    margin-top: 16px; display: none;
-  }
-  .progress-bar-bg {
-    height: 6px; background: var(--border); border-radius: 3px;
-    overflow: hidden;
-  }
-  .progress-bar {
-    height: 100%; background: var(--success); border-radius: 3px;
-    width: 0%; transition: width 0.3s;
-  }
-  .progress-text {
-    font-size: 12px; color: var(--text-secondary); margin-top: 8px;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* ── Toast ── */
-  .toast {
-    position: fixed; bottom: 24px; right: 24px;
-    padding: 14px 20px; border-radius: 10px;
-    font-size: 13px; font-weight: 500;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
-    transform: translateY(100px); opacity: 0;
-    transition: all 0.3s ease;
-    z-index: 9999;
-  }
-  .toast.show { transform: translateY(0); opacity: 1; }
-  .toast.success { background: var(--success); color: #fff; }
-  .toast.error { background: var(--danger); color: #fff; }
-
-  /* ── Config panel ── */
-  .config-notice {
-    background: var(--warning-bg); border: 1px solid rgba(245,158,11,0.2);
-    border-radius: var(--radius); padding: 20px;
-    margin-bottom: 32px; font-size: 13px; color: var(--warning);
-    line-height: 1.7;
-  }
-  .config-notice code {
-    background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  }
+  /* Spinner */
+  .spinner { display:inline-block; width:16px; height:16px; border:2px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin 0.6s linear infinite; vertical-align:middle; margin-right:8px; }
+  @keyframes spin { to { transform:rotate(360deg); } }
 </style>
 </head>
 
 <body>
 <div class="app">
 
-  <!-- ════════ LOGIN SCREEN ════════ -->
+  <!-- LOGIN -->
   <div id="screen-login" class="screen active">
     <div class="login-wrapper">
       <div class="login-card">
-        <div class="logo" style="margin-bottom: 32px;">
-          <div class="logo-icon">VC</div>
-          <span>VINCAP Data Uploader</span>
-        </div>
+        <div class="logo" style="margin-bottom:32px"><div class="logo-icon">VC</div><span>VINCAP Data Manager</span></div>
         <h1>Đăng nhập</h1>
         <p>Sử dụng tài khoản được cấp để truy cập hệ thống</p>
         <div id="login-error" class="error-msg"></div>
-        <div class="form-group">
-          <label>Email</label>
-          <input type="email" id="login-email" class="form-input" placeholder="user@vincap.vn" autocomplete="email">
-        </div>
-        <div class="form-group">
-          <label>Mật khẩu</label>
-          <input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password">
-        </div>
+        <div class="form-group"><label>Email</label><input type="email" id="login-email" class="form-input" placeholder="user@vincap.com" autocomplete="email"></div>
+        <div class="form-group"><label>Mật khẩu</label><input type="password" id="login-password" class="form-input" placeholder="••••••••" autocomplete="current-password"></div>
         <button id="btn-login" class="btn-primary" onclick="doLogin()">Đăng nhập</button>
       </div>
     </div>
   </div>
 
-  <!-- ════════ MAIN SCREEN ════════ -->
+  <!-- MAIN -->
   <div id="screen-main" class="screen">
     <div class="header">
-      <div class="logo">
-        <div class="logo-icon">VC</div>
-        <span>VINCAP Data Uploader</span>
-      </div>
-      <div class="user-info">
-        <span id="user-email"></span>
-        <button class="btn-logout" onclick="doLogout()">Đăng xuất</button>
-      </div>
+      <div class="logo"><div class="logo-icon">VC</div><span>VINCAP Data Manager</span></div>
+      <div class="user-info"><span id="user-email"></span><button class="btn-logout" onclick="doLogout()">Đăng xuất</button></div>
     </div>
 
     <div class="main">
+      <div id="config-notice" class="config-notice">⚠️ <strong>Cấu hình Firebase chưa được thiết lập.</strong><br>Tạo file <code>firebase-config.js</code> cạnh file HTML này.</div>
 
-      <!-- Config notice -->
-      <div id="config-notice" class="config-notice">
-        ⚠️ <strong>Cấu hình Firebase chưa được thiết lập.</strong><br>
-        Mở file này và thay thế <code>firebaseConfig</code> ở cuối file bằng config từ Firebase Console của bạn.<br>
-        Xem hướng dẫn bên dưới phần script.
+      <!-- Tab Nav -->
+      <div class="tab-nav">
+        <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload dữ liệu</button>
+        <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn &amp; Xuất CSV</button>
       </div>
 
-      <!-- Steps -->
-      <div class="steps">
-        <div class="step active" id="step-1">
-          <span class="step-num">1</span>Upload CSV
+      <!-- ══════ TAB 1: UPLOAD ══════ -->
+      <div id="tab-upload" class="tab-panel active">
+        <div class="steps">
+          <div class="step active" id="step-1"><span class="step-num">1</span>Upload CSV</div>
+          <div class="step" id="step-2"><span class="step-num">2</span>Xử lý dữ liệu</div>
+          <div class="step" id="step-3"><span class="step-num">3</span>Cập nhật Firestore</div>
         </div>
-        <div class="step" id="step-2">
-          <span class="step-num">2</span>Xử lý dữ liệu
+        <div class="upload-grid">
+          <div class="upload-card hose" onclick="this.querySelector('input').click()"><input type="file" accept=".csv" onchange="handleFile(this,'HOSE')"><div class="upload-exchange">HOSE</div><div class="upload-icon">📄</div><div class="upload-label">EXCHANGE_HOSE.csv</div><div class="upload-status" id="status-HOSE"></div></div>
+          <div class="upload-card hnx" onclick="this.querySelector('input').click()"><input type="file" accept=".csv" onchange="handleFile(this,'HNX')"><div class="upload-exchange">HNX</div><div class="upload-icon">📄</div><div class="upload-label">EXCHANGE_HNX.csv</div><div class="upload-status" id="status-HNX"></div></div>
+          <div class="upload-card upcom" onclick="this.querySelector('input').click()"><input type="file" accept=".csv" onchange="handleFile(this,'UPCOM')"><div class="upload-exchange">UPCOM</div><div class="upload-icon">📄</div><div class="upload-label">EXCHANGE_UPCOM.csv</div><div class="upload-status" id="status-UPCOM"></div></div>
         </div>
-        <div class="step" id="step-3">
-          <span class="step-num">3</span>Cập nhật Firestore
+        <div class="row">
+          <label>Ngày giao dịch:</label>
+          <input type="date" id="trade-date" class="date-input">
+          <button class="btn btn-accent" id="btn-process" onclick="processData()" disabled>Xử lý dữ liệu</button>
         </div>
-      </div>
-
-      <!-- Upload Grid -->
-      <div class="upload-grid">
-        <div class="upload-card hose" onclick="this.querySelector('input').click()">
-          <input type="file" accept=".csv" onchange="handleFile(this, 'HOSE')">
-          <div class="upload-exchange">HOSE</div>
-          <div class="upload-icon">📄</div>
-          <div class="upload-label">EXCHANGE_HOSE.csv</div>
-          <div class="upload-status" id="status-HOSE"></div>
-        </div>
-        <div class="upload-card hnx" onclick="this.querySelector('input').click()">
-          <input type="file" accept=".csv" onchange="handleFile(this, 'HNX')">
-          <div class="upload-exchange">HNX</div>
-          <div class="upload-icon">📄</div>
-          <div class="upload-label">EXCHANGE_HNX.csv</div>
-          <div class="upload-status" id="status-HNX"></div>
-        </div>
-        <div class="upload-card upcom" onclick="this.querySelector('input').click()">
-          <input type="file" accept=".csv" onchange="handleFile(this, 'UPCOM')">
-          <div class="upload-exchange">UPCOM</div>
-          <div class="upload-icon">📄</div>
-          <div class="upload-label">EXCHANGE_UPCOM.csv</div>
-          <div class="upload-status" id="status-UPCOM"></div>
-        </div>
-      </div>
-
-      <!-- Date + Process -->
-      <div class="date-row">
-        <label>Ngày giao dịch:</label>
-        <input type="date" id="trade-date" class="date-input">
-        <button class="btn-process" id="btn-process" onclick="processData()" disabled>
-          Xử lý dữ liệu
-        </button>
-      </div>
-
-      <!-- Results -->
-      <div id="results-section" style="display:none;">
-        <div class="results-panel">
-          <div class="results-header">
-            <h3>Kết quả xử lý</h3>
-            <div class="results-stats">
-              <div class="stat"><div class="stat-dot" style="background:var(--hose)"></div><span id="count-hose">0</span></div>
-              <div class="stat"><div class="stat-dot" style="background:var(--hnx)"></div><span id="count-hnx">0</span></div>
-              <div class="stat"><div class="stat-dot" style="background:var(--upcom)"></div><span id="count-upcom">0</span></div>
-              <div class="stat" style="color:var(--text-primary); font-weight:600;">Σ <span id="count-total">0</span></div>
+        <div id="upload-results" style="display:none">
+          <div class="results-panel">
+            <div class="results-header">
+              <h3>Kết quả xử lý</h3>
+              <div class="results-stats">
+                <div class="stat"><div class="stat-dot" style="background:var(--hose)"></div><span id="count-hose">0</span></div>
+                <div class="stat"><div class="stat-dot" style="background:var(--hnx)"></div><span id="count-hnx">0</span></div>
+                <div class="stat"><div class="stat-dot" style="background:var(--upcom)"></div><span id="count-upcom">0</span></div>
+                <div class="stat" style="color:var(--text-primary);font-weight:600">Σ <span id="count-total">0</span></div>
+              </div>
+            </div>
+            <div class="results-table-wrap">
+              <table class="results-table"><thead><tr><th>Ticker</th><th>Date</th><th>Open</th><th>High</th><th>Low</th><th>Close</th><th>Volume</th><th>Value</th><th>VWAP</th></tr></thead><tbody id="upload-tbody"></tbody></table>
             </div>
           </div>
-          <div class="results-table-wrap">
-            <table class="results-table">
-              <thead>
-                <tr>
-                  <th>Ticker</th><th>Date</th><th>Open</th><th>High</th>
-                  <th>Low</th><th>Close</th><th>Volume</th><th>Value</th><th>VWAP</th>
-                </tr>
-              </thead>
-              <tbody id="results-body"></tbody>
-            </table>
+          <div class="row">
+            <button class="btn btn-success" id="btn-firestore" onclick="uploadToFirestore()">🔥 Cập nhật vào Firestore</button>
+            <button class="btn btn-outline" onclick="downloadUploadCSV()">↓ Tải CSV</button>
+          </div>
+          <div class="progress-wrap" id="upload-progress"><div class="progress-bar-bg"><div class="progress-bar" id="upload-pbar"></div></div><div class="progress-text" id="upload-ptxt"></div></div>
+        </div>
+      </div>
+
+      <!-- ══════ TAB 2: QUERY & EXPORT ══════ -->
+      <div id="tab-query" class="tab-panel">
+
+        <div class="query-card">
+          <h3>📅 Chọn ngày và bộ lọc</h3>
+          <div class="row">
+            <label>Ngày:</label>
+            <input type="date" id="q-date" class="date-input">
+          </div>
+          <div class="row">
+            <label>Lọc theo:</label>
+            <select id="q-filter-type" class="select-input" onchange="onFilterTypeChange()">
+              <option value="all">Tất cả cổ phiếu</option>
+              <option value="exchange">Theo sàn</option>
+              <option value="list">Danh sách tùy chọn</option>
+            </select>
+            <select id="q-exchange" class="select-input" style="display:none">
+              <option value="HOSE">HOSE</option>
+              <option value="HNX">HNX</option>
+              <option value="UPCOM">UPCOM</option>
+            </select>
+          </div>
+          <div id="q-ticker-section" style="display:none">
+            <textarea id="q-ticker-list" class="ticker-input-area" placeholder="Nhập mã CK cách nhau bằng dấu phẩy hoặc xuống dòng&#10;VD: VCB, HPG, FPT, MWG"></textarea>
+            <div class="hint">Hoặc upload file CSV chứa cột ticker:</div>
+            <div class="ticker-file-row">
+              <label class="ticker-file-label" onclick="document.getElementById('q-ticker-file').click()">📎 Chọn file CSV</label>
+              <input type="file" id="q-ticker-file" accept=".csv" style="display:none" onchange="handleTickerFile(this)">
+              <span class="ticker-file-status" id="q-ticker-file-status"></span>
+            </div>
           </div>
         </div>
 
-        <div class="action-row">
-          <button class="btn-upload-db" id="btn-firestore" onclick="uploadToFirestore()">
-            🔥 Cập nhật vào Firestore
-          </button>
-          <button class="btn-download" onclick="downloadCSV()">
-            ↓ Tải CSV
-          </button>
+        <div class="query-card">
+          <h3>📊 Chọn cột xuất CSV</h3>
+          <div class="row" style="margin-bottom:8px">
+            <button class="btn btn-outline" onclick="toggleAllCols(true)" style="padding:6px 14px;font-size:12px">Chọn tất cả</button>
+            <button class="btn btn-outline" onclick="toggleAllCols(false)" style="padding:6px 14px;font-size:12px">Bỏ chọn tất cả</button>
+          </div>
+          <div class="col-checks" id="col-checks"></div>
         </div>
 
-        <div class="progress-wrap" id="progress-wrap">
-          <div class="progress-bar-bg"><div class="progress-bar" id="progress-bar"></div></div>
-          <div class="progress-text" id="progress-text"></div>
+        <div class="row">
+          <button class="btn btn-accent" id="btn-query" onclick="queryData()">🔍 Truy vấn dữ liệu</button>
         </div>
+
+        <div id="query-results" style="display:none">
+          <div class="results-panel">
+            <div class="results-header">
+              <h3 id="q-results-title">Kết quả truy vấn</h3>
+              <div class="results-stats"><div class="stat" style="color:var(--text-primary);font-weight:600"><span id="q-count">0</span> mã</div></div>
+            </div>
+            <div class="results-table-wrap">
+              <table class="results-table"><thead><tr id="q-thead"></tr></thead><tbody id="q-tbody"></tbody></table>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-success" onclick="downloadQueryCSV()">↓ Xuất CSV</button>
+          </div>
+        </div>
+
+        <div class="progress-wrap" id="query-progress"><div class="progress-bar-bg"><div class="progress-bar" id="query-pbar"></div></div><div class="progress-text" id="query-ptxt"></div></div>
       </div>
 
     </div>
   </div>
 </div>
 
-<!-- ── Toast ── -->
 <div class="toast" id="toast"></div>
 
-<!-- Firebase Config — tách riêng, không cần sửa khi update webapp -->
 <script src="firebase-config.js"></script>
-
 <script>
 // ── Init Firebase ──
 let fbReady = false;
-try {
-  firebase.initializeApp(firebaseConfig);
-  if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
-    fbReady = true;
-  }
-} catch(e) {
-  console.warn("Firebase init error:", e);
-}
-
+try { firebase.initializeApp(firebaseConfig); if (firebaseConfig.apiKey !== "YOUR_API_KEY") fbReady = true; } catch(e) { console.warn(e); }
 const auth = firebase.auth();
-const db   = firebase.firestore();
+const db = firebase.firestore();
 
 // ── State ──
-const rawFiles  = { HOSE: null, HNX: null, UPCOM: null };
+const rawFiles = { HOSE:null, HNX:null, UPCOM:null };
 let processedRows = [];
+let queryRows = [];
 
-// ── On load ──
+const ALL_COLUMNS = [
+  { key:'ticker',   label:'Ticker',   on:true },
+  { key:'date',     label:'Date',     on:true },
+  { key:'exchange', label:'Exchange', on:false },
+  { key:'open',     label:'Open',     on:true },
+  { key:'high',     label:'High',     on:true },
+  { key:'low',      label:'Low',      on:true },
+  { key:'close',    label:'Close',    on:true },
+  { key:'volume',   label:'Volume',   on:true },
+  { key:'value',    label:'Value',    on:true },
+  { key:'vwap',     label:'VWAP',     on:true },
+];
+let selectedCols = new Set(ALL_COLUMNS.filter(c=>c.on).map(c=>c.key));
+
+// ══════════ INIT ══════════
 document.addEventListener('DOMContentLoaded', () => {
-  // Default date = today
-  const today = new Date();
-  document.getElementById('trade-date').value = today.toISOString().split('T')[0];
-
-  // Toggle config notice
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('trade-date').value = today;
+  document.getElementById('q-date').value = today;
   if (fbReady) document.getElementById('config-notice').style.display = 'none';
-
-  // Auth state
-  auth.onAuthStateChanged(user => {
-    if (user) {
-      showScreen('screen-main');
-      document.getElementById('user-email').textContent = user.email;
-    } else {
-      showScreen('screen-login');
-    }
-  });
+  auth.onAuthStateChanged(u => { if(u){showScreen('screen-main');document.getElementById('user-email').textContent=u.email;}else{showScreen('screen-login');} });
+  renderColChecks();
 });
 
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(id).classList.add('active');
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function switchTab(t){ document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',t==='upload'?i===0:i===1)); document.getElementById('tab-upload').classList.toggle('active',t==='upload'); document.getElementById('tab-query').classList.toggle('active',t==='query'); }
+
+// ══════════ AUTH ══════════
+async function doLogin(){
+  const e=document.getElementById('login-email').value.trim(), p=document.getElementById('login-password').value, err=document.getElementById('login-error');
+  err.style.display='none';
+  if(!e||!p){err.textContent='Vui lòng nhập đầy đủ.';err.style.display='block';return;}
+  document.getElementById('btn-login').disabled=true;
+  try{await auth.signInWithEmailAndPassword(e,p);}catch(x){const m={'auth/user-not-found':'Tài khoản không tồn tại.','auth/wrong-password':'Sai mật khẩu.','auth/invalid-email':'Email không hợp lệ.','auth/too-many-requests':'Quá nhiều lần thử.'};err.textContent=m[x.code]||x.message;err.style.display='block';}
+  document.getElementById('btn-login').disabled=false;
 }
+function doLogout(){auth.signOut();}
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&document.getElementById('screen-login').classList.contains('active'))doLogin();});
 
-// ══════════════ AUTH ══════════════
-async function doLogin() {
-  const email = document.getElementById('login-email').value.trim();
-  const pw    = document.getElementById('login-password').value;
-  const errEl = document.getElementById('login-error');
-  errEl.style.display = 'none';
-
-  if (!email || !pw) {
-    errEl.textContent = 'Vui lòng nhập đầy đủ email và mật khẩu.';
-    errEl.style.display = 'block';
-    return;
-  }
-
-  document.getElementById('btn-login').disabled = true;
-  try {
-    await auth.signInWithEmailAndPassword(email, pw);
-  } catch(e) {
-    const msgs = {
-      'auth/user-not-found': 'Tài khoản không tồn tại.',
-      'auth/wrong-password': 'Sai mật khẩu.',
-      'auth/invalid-email': 'Email không hợp lệ.',
-      'auth/too-many-requests': 'Quá nhiều lần thử. Vui lòng đợi.',
-    };
-    errEl.textContent = msgs[e.code] || `Lỗi: ${e.message}`;
-    errEl.style.display = 'block';
-  }
-  document.getElementById('btn-login').disabled = false;
+// ══════════ UPLOAD TAB ══════════
+function handleFile(input,ex){
+  const f=input.files[0]; if(!f)return;
+  Papa.parse(f,{encoding:"utf-8",complete:r=>{rawFiles[ex]=r.data;input.closest('.upload-card').classList.add('loaded');document.getElementById(`status-${ex}`).textContent=`✓ ${r.data.length-2} dòng`;checkReady();},error:e=>showToast(`Lỗi: ${e.message}`,'error')});
 }
+function checkReady(){document.getElementById('btn-process').disabled=Object.values(rawFiles).filter(Boolean).length===0;setStep(1);}
+function parseNum(v){if(!v||v.trim()==='')return null;const n=parseFloat(v.replace(/,/g,''));return isNaN(n)?null:n;}
 
-function doLogout() { auth.signOut(); }
-
-// Enter key on password field
-document.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && document.getElementById('screen-login').classList.contains('active')) {
-    doLogin();
-  }
-});
-
-// ══════════════ FILE UPLOAD ══════════════
-function handleFile(input, exchange) {
-  const file = input.files[0];
-  if (!file) return;
-
-  Papa.parse(file, {
-    encoding: "utf-8",
-    complete: (result) => {
-      rawFiles[exchange] = result.data;
-      const card = input.closest('.upload-card');
-      card.classList.add('loaded');
-      const rows = result.data.length - 2; // minus header rows
-      document.getElementById(`status-${exchange}`).textContent = `✓ ${rows} dòng`;
-      checkReady();
-    },
-    error: (err) => {
-      showToast(`Lỗi đọc file ${exchange}: ${err.message}`, 'error');
-    }
-  });
-}
-
-function checkReady() {
-  const loaded = Object.values(rawFiles).filter(Boolean).length;
-  document.getElementById('btn-process').disabled = (loaded === 0);
-  if (loaded > 0) setStep(1);
-}
-
-// ══════════════ PROCESS DATA ══════════════
-const COL_MAP = { 'CK': 0, 'Trần': 1, 'Sàn': 2, 'TC': 3, 'Giá': 4, 'Tổng KL': 5, 'Tổng GT': 6, 'Cao': 7, 'Thấp': 8, 'Mở cửa': 9, 'TB': 10 };
-
-function parseNum(val) {
-  if (!val || val.trim() === '') return null;
-  const n = parseFloat(val.replace(/,/g, ''));
-  return isNaN(n) ? null : n;
-}
-
-function processExchange(data, exchange) {
-  // Row 0 = banner "Khớp lệnh", Row 1 = headers, Row 2+ = data
-  const rows = [];
-  for (let i = 2; i < data.length; i++) {
-    const r = data[i];
-    if (!r || !r[0] || r[0].trim() === '') continue;
-
-    const ticker = r[0].replace(/"/g, '').trim();
-    const ref    = parseNum(r[3]);
-    let open     = parseNum(r[9]);
-    let high     = parseNum(r[7]);
-    let low      = parseNum(r[8]);
-    let close    = parseNum(r[4]);
-    let volume   = parseNum(r[5]);
-    let value    = parseNum(r[6]);
-    let vwap     = parseNum(r[10]);
-
-    // Skip nếu không có cả TC
-    if (ref === null && close === null) continue;
-
-    // Mã không khớp lệnh -> fill bằng TC
-    const noTrade = (!volume || volume === 0);
-    if (noTrade) {
-      open = high = low = close = vwap = ref;
-      volume = 0;
-      value  = 0;
-    }
-
-    // Nếu close vẫn null (edge case), dùng ref
-    if (close === null) close = ref;
-
-    rows.push({
-      ticker,
-      exchange,
-      open:   open   / 1000,
-      high:   high   / 1000,
-      low:    low    / 1000,
-      close:  close  / 1000,
-      volume: volume || 0,
-      value:  value  || 0,
-      vwap:   (vwap || close) / 1000,
-    });
+function processExchange(data,exchange){
+  const rows=[];
+  for(let i=2;i<data.length;i++){
+    const r=data[i]; if(!r||!r[0]||r[0].trim()==='')continue;
+    const ticker=r[0].replace(/"/g,'').trim(), ref=parseNum(r[3]);
+    let o=parseNum(r[9]),h=parseNum(r[7]),l=parseNum(r[8]),c=parseNum(r[4]),v=parseNum(r[5]),val=parseNum(r[6]),vw=parseNum(r[10]);
+    if(ref===null&&c===null)continue;
+    if(!v||v===0){o=h=l=c=vw=ref;v=0;val=0;}
+    if(c===null)c=ref;
+    rows.push({ticker,exchange,open:o/1000,high:h/1000,low:l/1000,close:c/1000,volume:v||0,value:val||0,vwap:(vw||c)/1000});
   }
   return rows;
 }
 
-function processData() {
-  const dateStr = document.getElementById('trade-date').value; // yyyy-mm-dd
-  if (!dateStr || dateStr.length !== 10) {
-    showToast('Vui lòng chọn ngày giao dịch.', 'error');
-    return;
-  }
-
-  processedRows = [];
-  const counts = { HOSE: 0, HNX: 0, UPCOM: 0 };
-
-  for (const [exchange, data] of Object.entries(rawFiles)) {
-    if (!data) continue;
-    const rows = processExchange(data, exchange);
-    rows.forEach(r => r.date = dateStr);
-    counts[exchange] = rows.length;
-    processedRows.push(...rows);
-  }
-
-  // Sort by ticker
-  processedRows.sort((a, b) => a.ticker.localeCompare(b.ticker));
-
-  // Render
-  renderResults(processedRows, counts);
-  setStep(2);
-  showToast(`Xử lý thành công: ${processedRows.length} mã`, 'success');
+function processData(){
+  const d=document.getElementById('trade-date').value;
+  if(!d||d.length!==10){showToast('Vui lòng chọn ngày.','error');return;}
+  processedRows=[];const counts={HOSE:0,HNX:0,UPCOM:0};
+  for(const[ex,data]of Object.entries(rawFiles)){if(!data)continue;const rows=processExchange(data,ex);rows.forEach(r=>r.date=d);counts[ex]=rows.length;processedRows.push(...rows);}
+  processedRows.sort((a,b)=>a.ticker.localeCompare(b.ticker));
+  document.getElementById('count-hose').textContent=counts.HOSE;
+  document.getElementById('count-hnx').textContent=counts.HNX;
+  document.getElementById('count-upcom').textContent=counts.UPCOM;
+  document.getElementById('count-total').textContent=processedRows.length;
+  const tb=document.getElementById('upload-tbody');
+  tb.innerHTML=processedRows.slice(0,200).map(r=>`<tr class="${r.volume===0?'zero-vol':''}"><td class="ticker-cell">${r.ticker}</td><td>${r.date}</td><td>${r.open.toFixed(2)}</td><td>${r.high.toFixed(2)}</td><td>${r.low.toFixed(2)}</td><td>${r.close.toFixed(2)}</td><td>${r.volume.toLocaleString()}</td><td>${r.value.toLocaleString()}</td><td>${r.vwap.toFixed(5)}</td></tr>`).join('');
+  document.getElementById('upload-results').style.display='block';
+  setStep(2);showToast(`Xử lý thành công: ${processedRows.length} mã`,'success');
 }
 
-function renderResults(rows, counts) {
-  document.getElementById('count-hose').textContent  = counts.HOSE;
-  document.getElementById('count-hnx').textContent   = counts.HNX;
-  document.getElementById('count-upcom').textContent  = counts.UPCOM;
-  document.getElementById('count-total').textContent  = rows.length;
-
-  const tbody = document.getElementById('results-body');
-  // Render first 200 for perf, rest is in the CSV
-  const preview = rows.slice(0, 200);
-  tbody.innerHTML = preview.map(r => `
-    <tr class="${r.volume === 0 ? 'zero-vol' : ''}">
-      <td class="ticker-cell">${r.ticker}</td>
-      <td>${r.date}</td>
-      <td>${r.open.toFixed(2)}</td>
-      <td>${r.high.toFixed(2)}</td>
-      <td>${r.low.toFixed(2)}</td>
-      <td>${r.close.toFixed(2)}</td>
-      <td>${r.volume.toLocaleString()}</td>
-      <td>${r.value.toLocaleString()}</td>
-      <td>${r.vwap.toFixed(5)}</td>
-    </tr>
-  `).join('');
-
-  document.getElementById('results-section').style.display = 'block';
-}
-
-// ══════════════ FIRESTORE UPLOAD ══════════════
-// Cấu trúc: stocks/{TICKER}/ohlcv/{yyyy-mm-dd}
-// Parent doc stocks/{TICKER} lưu info (exchange, updated_at)
-
-async function uploadToFirestore() {
-  if (!fbReady) {
-    showToast('Firebase chưa được cấu hình!', 'error');
-    return;
-  }
-  if (processedRows.length === 0) return;
-
-  const btn = document.getElementById('btn-firestore');
-  btn.disabled = true;
-
-  const progressWrap = document.getElementById('progress-wrap');
-  const progressBar  = document.getElementById('progress-bar');
-  const progressText = document.getElementById('progress-text');
-  progressWrap.style.display = 'block';
-
-  const total = processedRows.length;
-  // Mỗi row = 3 writes (stock parent + ohlcv sub + daily snapshot)
-  // Firestore limit = 500 writes/batch → 500/3 ≈ 166 rows/batch
-  const BATCH_SIZE = 150;
-  let uploaded = 0;
-  let batchCount = 0;
-
-  const ts = firebase.firestore.FieldValue.serverTimestamp();
-  const user = auth.currentUser.email;
-
-  try {
-    for (let i = 0; i < total; i += BATCH_SIZE) {
-      const batch = db.batch();
-      const slice = processedRows.slice(i, i + BATCH_SIZE);
-
-      slice.forEach(row => {
-        const ohlcvData = {
-          open:   row.open,
-          high:   row.high,
-          low:    row.low,
-          close:  row.close,
-          volume: row.volume,
-          value:  row.value,
-          vwap:   row.vwap,
-          updated_at: ts,
-          updated_by: user,
-        };
-
-        // ① stocks/{TICKER} — parent doc
-        const stockRef = db.collection('stocks').doc(row.ticker);
-        batch.set(stockRef, {
-          exchange:   row.exchange,
-          updated_at: ts,
-          updated_by: user,
-        }, { merge: true });
-
-        // ② stocks/{TICKER}/ohlcv/{date} — subcollection
-        batch.set(stockRef.collection('ohlcv').doc(row.date),
-          ohlcvData, { merge: true });
-
-        // ③ daily_snapshots/{date}/stocks/{TICKER} — snapshot
-        batch.set(
-          db.collection('daily_snapshots').doc(row.date)
-            .collection('stocks').doc(row.ticker),
-          { ...ohlcvData, exchange: row.exchange },
-          { merge: true }
-        );
+async function uploadToFirestore(){
+  if(!fbReady){showToast('Firebase chưa cấu hình!','error');return;}
+  if(!processedRows.length)return;
+  const btn=document.getElementById('btn-firestore');btn.disabled=true;
+  const pw=document.getElementById('upload-progress');pw.style.display='block';
+  const bar=document.getElementById('upload-pbar'),txt=document.getElementById('upload-ptxt');
+  const total=processedRows.length,BS=150;let up=0,bc=0;
+  const ts=firebase.firestore.FieldValue.serverTimestamp(),user=auth.currentUser.email;
+  try{
+    for(let i=0;i<total;i+=BS){
+      const batch=db.batch(),sl=processedRows.slice(i,i+BS);
+      sl.forEach(row=>{
+        const d={open:row.open,high:row.high,low:row.low,close:row.close,volume:row.volume,value:row.value,vwap:row.vwap,updated_at:ts,updated_by:user};
+        const sRef=db.collection('stocks').doc(row.ticker);
+        batch.set(sRef,{exchange:row.exchange,updated_at:ts,updated_by:user},{merge:true});
+        batch.set(sRef.collection('ohlcv').doc(row.date),d,{merge:true});
+        batch.set(db.collection('daily_snapshots').doc(row.date).collection('stocks').doc(row.ticker),{...d,exchange:row.exchange},{merge:true});
       });
+      await batch.commit();up+=sl.length;bc++;
+      bar.style.width=Math.round(up/total*100)+'%';txt.textContent=`Batch ${bc} — ${up}/${total} (${Math.round(up/total*100)}%)`;
+    }
+    setStep(3);showToast(`Đã cập nhật ${total} mã vào Firestore!`,'success');
+  }catch(e){showToast(`Lỗi: ${e.message}`,'error');console.error(e);}
+  btn.disabled=false;
+}
 
-      await batch.commit();
-      uploaded += slice.length;
-      batchCount++;
+function downloadUploadCSV(){
+  if(!processedRows.length)return;
+  const h='ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,ticker_value,ticker_vwap';
+  const l=processedRows.map(r=>`${r.ticker},${r.date},${r.open},${r.high},${r.low},${r.close},${r.volume},${r.value},${r.vwap}`);
+  dlBlob([h,...l].join('\n'),`ssi_ohlcv_${processedRows[0].date}.csv`);
+}
+function setStep(n){for(let i=1;i<=3;i++){const el=document.getElementById(`step-${i}`);el.classList.remove('active','done');if(i<n)el.classList.add('done');if(i===n)el.classList.add('active');}}
 
-      const pct = Math.round((uploaded / total) * 100);
-      progressBar.style.width = pct + '%';
-      progressText.textContent = `Batch ${batchCount} — ${uploaded}/${total} (${pct}%)`;
+// ══════════ QUERY TAB ══════════
+function onFilterTypeChange(){
+  const t=document.getElementById('q-filter-type').value;
+  document.getElementById('q-exchange').style.display=t==='exchange'?'inline-block':'none';
+  document.getElementById('q-ticker-section').style.display=t==='list'?'block':'none';
+}
+
+function handleTickerFile(input){
+  const f=input.files[0];if(!f)return;
+  Papa.parse(f,{encoding:"utf-8",complete:r=>{
+    const hdr=r.data[0]||[];let ci=hdr.findIndex(h=>h.trim().toLowerCase()==='ticker');if(ci===-1)ci=0;
+    const tks=[];for(let i=1;i<r.data.length;i++){const v=(r.data[i][ci]||'').trim().toUpperCase();if(v&&v.length<=10)tks.push(v);}
+    document.getElementById('q-ticker-list').value=tks.join(', ');
+    document.getElementById('q-ticker-file-status').textContent=`✓ ${tks.length} mã`;
+  }});
+}
+
+function renderColChecks(){
+  document.getElementById('col-checks').innerHTML=ALL_COLUMNS.map(c=>`<label class="col-check ${selectedCols.has(c.key)?'checked':''}" onclick="toggleCol(this,'${c.key}')"><input type="checkbox" ${selectedCols.has(c.key)?'checked':''}>${c.label}</label>`).join('');
+}
+function toggleCol(el,k){if(selectedCols.has(k))selectedCols.delete(k);else selectedCols.add(k);el.classList.toggle('checked');el.querySelector('input').checked=selectedCols.has(k);}
+function toggleAllCols(on){if(on)ALL_COLUMNS.forEach(c=>selectedCols.add(c.key));else selectedCols.clear();renderColChecks();}
+
+function parseTickerList(){
+  const raw=document.getElementById('q-ticker-list').value.trim();
+  if(!raw)return[];
+  return [...new Set(raw.split(/[,\s\n\r]+/).map(t=>t.trim().toUpperCase()).filter(t=>t.length>0&&t.length<=10))];
+}
+
+async function queryData(){
+  if(!fbReady){showToast('Firebase chưa cấu hình!','error');return;}
+  const dateStr=document.getElementById('q-date').value;
+  if(!dateStr){showToast('Vui lòng chọn ngày.','error');return;}
+  if(selectedCols.size===0){showToast('Vui lòng chọn ít nhất 1 cột.','error');return;}
+
+  const filterType=document.getElementById('q-filter-type').value;
+  const btn=document.getElementById('btn-query');btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>Đang truy vấn...';
+
+  const pw=document.getElementById('query-progress');pw.style.display='block';
+  const bar=document.getElementById('query-pbar'),txt=document.getElementById('query-ptxt');
+  bar.style.width='10%';txt.textContent='Đang đọc Firestore...';
+
+  queryRows=[];
+
+  try{
+    if(filterType==='list'){
+      const tickers=parseTickerList();
+      if(!tickers.length){showToast('Vui lòng nhập danh sách mã.','error');btn.disabled=false;btn.textContent='🔍 Truy vấn dữ liệu';pw.style.display='none';return;}
+      bar.style.width='20%';txt.textContent=`Đang load ${tickers.length} mã...`;
+
+      // Query từ subcollection stocks/{TICKER}/ohlcv/{date}
+      const CHUNK=20;
+      for(let i=0;i<tickers.length;i+=CHUNK){
+        const chunk=tickers.slice(i,i+CHUNK);
+        const promises=chunk.map(async tk=>{
+          const sDoc=await db.collection('stocks').doc(tk).get();
+          const ex=sDoc.exists?(sDoc.data().exchange||''):'';
+          const oDoc=await db.collection('stocks').doc(tk).collection('ohlcv').doc(dateStr).get();
+          if(oDoc.exists)return{ticker:tk,date:dateStr,exchange:ex,...oDoc.data()};
+          return null;
+        });
+        const res=await Promise.all(promises);
+        res.filter(Boolean).forEach(r=>queryRows.push(r));
+        const pct=Math.round(((i+chunk.length)/tickers.length)*80)+20;
+        bar.style.width=pct+'%';txt.textContent=`${queryRows.length} / ${tickers.length} mã...`;
+      }
+
+    } else {
+      // Query từ daily_snapshots/{date}/stocks
+      bar.style.width='30%';txt.textContent='Đang load snapshot...';
+      let q=db.collection('daily_snapshots').doc(dateStr).collection('stocks');
+      if(filterType==='exchange'){
+        q=q.where('exchange','==',document.getElementById('q-exchange').value);
+      }
+      const snap=await q.get();
+      snap.forEach(doc=>queryRows.push({ticker:doc.id,date:dateStr,...doc.data()}));
     }
 
-    setStep(3);
-    showToast(`Đã cập nhật ${total} mã vào Firestore!`, 'success');
-  } catch(e) {
-    showToast(`Lỗi Firestore: ${e.message}`, 'error');
-    console.error(e);
-  }
+    queryRows.sort((a,b)=>a.ticker.localeCompare(b.ticker));
+    bar.style.width='100%';txt.textContent=`Hoàn tất: ${queryRows.length} mã`;
+    renderQueryResults();
+    showToast(`Tìm thấy ${queryRows.length} mã`,'success');
+  }catch(e){showToast(`Lỗi: ${e.message}`,'error');console.error(e);}
 
-  btn.disabled = false;
+  btn.disabled=false;btn.textContent='🔍 Truy vấn dữ liệu';
 }
 
-// ══════════════ DOWNLOAD CSV ══════════════
-function downloadCSV() {
-  if (processedRows.length === 0) return;
-
-  const header = 'ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,ticker_value,ticker_vwap';
-  const lines = processedRows.map(r =>
-    `${r.ticker},${r.date},${r.open},${r.high},${r.low},${r.close},${r.volume},${r.value},${r.vwap}`
-  );
-  const csv = [header, ...lines].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const url = URL.createObjectURL(blob);
-
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `ssi_ohlcv_${processedRows[0].date}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
+function fmtVal(key,val){
+  if(val===undefined||val===null)return '';
+  if(key==='volume')return Number(val).toLocaleString();
+  if(key==='value')return Number(val).toLocaleString();
+  if(key==='vwap')return Number(val).toFixed(5);
+  if(['open','high','low','close'].includes(key))return Number(val).toFixed(2);
+  return val;
 }
 
-// ══════════════ HELPERS ══════════════
-function setStep(n) {
-  for (let i = 1; i <= 3; i++) {
-    const el = document.getElementById(`step-${i}`);
-    el.classList.remove('active', 'done');
-    if (i < n) el.classList.add('done');
-    if (i === n) el.classList.add('active');
-  }
+function renderQueryResults(){
+  const cols=ALL_COLUMNS.filter(c=>selectedCols.has(c.key));
+  document.getElementById('q-thead').innerHTML=cols.map(c=>`<th>${c.label}</th>`).join('');
+  document.getElementById('q-count').textContent=queryRows.length;
+  document.getElementById('q-results-title').textContent=`Kết quả — ${document.getElementById('q-date').value}`;
+  const tb=document.getElementById('q-tbody');
+  tb.innerHTML=queryRows.slice(0,300).map(r=>'<tr>'+cols.map(c=>`<td${c.key==='ticker'?' class="ticker-cell"':''}>${fmtVal(c.key,r[c.key])}</td>`).join('')+'</tr>').join('');
+  document.getElementById('query-results').style.display='block';
 }
 
-function showToast(msg, type = 'success') {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.className = `toast ${type} show`;
-  setTimeout(() => el.classList.remove('show'), 3500);
+function downloadQueryCSV(){
+  if(!queryRows.length)return;
+  const cols=ALL_COLUMNS.filter(c=>selectedCols.has(c.key));
+  const h=cols.map(c=>c.key).join(',');
+  const l=queryRows.map(r=>cols.map(c=>{let v=r[c.key];return v===undefined||v===null?'':v;}).join(','));
+  dlBlob([h,...l].join('\n'),`vincap_query_${document.getElementById('q-date').value}.csv`);
 }
+
+// ══════════ HELPERS ══════════
+function dlBlob(csv,fn){const b=new Blob([csv],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn;a.click();URL.revokeObjectURL(u);}
+function showToast(msg,type='success'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${type} show`;setTimeout(()=>el.classList.remove('show'),3500);}
 </script>
 </body>
 </html>
