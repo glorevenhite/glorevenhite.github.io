@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -500,9 +499,6 @@ const firebaseConfig = {
   measurementId: "G-5N03NL56NJ"
 };
 
-// ── Firestore collection name ──
-const COLLECTION_NAME = "ohlcv_daily";
-
 // ── Init Firebase ──
 let fbReady = false;
 try {
@@ -667,8 +663,8 @@ function processExchange(data, exchange) {
 }
 
 function processData() {
-  const dateStr = document.getElementById('trade-date').value.replace(/-/g, '');
-  if (!dateStr || dateStr.length !== 8) {
+  const dateStr = document.getElementById('trade-date').value; // yyyy-mm-dd
+  if (!dateStr || dateStr.length !== 10) {
     showToast('Vui lòng chọn ngày giao dịch.', 'error');
     return;
   }
@@ -720,6 +716,9 @@ function renderResults(rows, counts) {
 }
 
 // ══════════════ FIRESTORE UPLOAD ══════════════
+// Cấu trúc: stocks/{TICKER}/ohlcv/{yyyy-mm-dd}
+// Parent doc stocks/{TICKER} lưu info (exchange, updated_at)
+
 async function uploadToFirestore() {
   if (!fbReady) {
     showToast('Firebase chưa được cấu hình!', 'error');
@@ -736,9 +735,14 @@ async function uploadToFirestore() {
   progressWrap.style.display = 'block';
 
   const total = processedRows.length;
-  const BATCH_SIZE = 450; // Firestore limit = 500 per batch
+  // Mỗi row = 3 writes (stock parent + ohlcv sub + daily snapshot)
+  // Firestore limit = 500 writes/batch → 500/3 ≈ 166 rows/batch
+  const BATCH_SIZE = 150;
   let uploaded = 0;
   let batchCount = 0;
+
+  const ts = firebase.firestore.FieldValue.serverTimestamp();
+  const user = auth.currentUser.email;
 
   try {
     for (let i = 0; i < total; i += BATCH_SIZE) {
@@ -746,23 +750,37 @@ async function uploadToFirestore() {
       const slice = processedRows.slice(i, i + BATCH_SIZE);
 
       slice.forEach(row => {
-        // Doc ID = TICKER_YYYYMMDD  (unique per ticker per day)
-        const docId = `${row.ticker}_${row.date}`;
-        const ref = db.collection(COLLECTION_NAME).doc(docId);
-        batch.set(ref, {
-          ticker:   row.ticker,
-          date:     row.date,
-          exchange: row.exchange,
-          open:     row.open,
-          high:     row.high,
-          low:      row.low,
-          close:    row.close,
-          volume:   row.volume,
-          value:    row.value,
-          vwap:     row.vwap,
-          updated_at: firebase.firestore.FieldValue.serverTimestamp(),
-          updated_by: auth.currentUser.email,
+        const ohlcvData = {
+          open:   row.open,
+          high:   row.high,
+          low:    row.low,
+          close:  row.close,
+          volume: row.volume,
+          value:  row.value,
+          vwap:   row.vwap,
+          updated_at: ts,
+          updated_by: user,
+        };
+
+        // ① stocks/{TICKER} — parent doc
+        const stockRef = db.collection('stocks').doc(row.ticker);
+        batch.set(stockRef, {
+          exchange:   row.exchange,
+          updated_at: ts,
+          updated_by: user,
         }, { merge: true });
+
+        // ② stocks/{TICKER}/ohlcv/{date} — subcollection
+        batch.set(stockRef.collection('ohlcv').doc(row.date),
+          ohlcvData, { merge: true });
+
+        // ③ daily_snapshots/{date}/stocks/{TICKER} — snapshot
+        batch.set(
+          db.collection('daily_snapshots').doc(row.date)
+            .collection('stocks').doc(row.ticker),
+          { ...ohlcvData, exchange: row.exchange },
+          { merge: true }
+        );
       });
 
       await batch.commit();
@@ -775,7 +793,7 @@ async function uploadToFirestore() {
     }
 
     setStep(3);
-    showToast(`Đã cập nhật ${total} documents vào Firestore!`, 'success');
+    showToast(`Đã cập nhật ${total} mã vào Firestore!`, 'success');
   } catch(e) {
     showToast(`Lỗi Firestore: ${e.message}`, 'error');
     console.error(e);
@@ -840,8 +858,17 @@ function showToast(msg, type = 'success') {
 ║     rules_version = '2';                                           ║
 ║     service cloud.firestore {                                      ║
 ║       match /databases/{database}/documents {                      ║
-║         match /ohlcv_daily/{document=**} {                         ║
+║         match /stocks/{ticker} {                                   ║
 ║           allow read, write: if request.auth != null;              ║
+║           match /ohlcv/{date} {                                    ║
+║             allow read, write: if request.auth != null;            ║
+║           }                                                        ║
+║         }                                                          ║
+║         match /daily_snapshots/{date} {                            ║
+║           allow read, write: if request.auth != null;              ║
+║           match /stocks/{ticker} {                                 ║
+║             allow read, write: if request.auth != null;            ║
+║           }                                                        ║
 ║         }                                                          ║
 ║       }                                                            ║
 ║     }                                                              ║
