@@ -482,23 +482,10 @@
 <!-- ── Toast ── -->
 <div class="toast" id="toast"></div>
 
-<script>
-// ╔══════════════════════════════════════════════════════════════════╗
-// ║  🔧 FIREBASE CONFIG — THAY THẾ BẰNG CONFIG CỦA VINH           ║
-// ║  Firebase Console > Project Settings > General > Your apps     ║
-// ║  > Firebase SDK snippet > Config                               ║
-// ╚══════════════════════════════════════════════════════════════════╝
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyClGNqKhV9CrGsf3nMaN0tkRzWu36Zy63Y",
-  authDomain: "vietnam-stock-eod.firebaseapp.com",
-  projectId: "vietnam-stock-eod",
-  storageBucket: "vietnam-stock-eod.firebasestorage.app",
-  messagingSenderId: "554353569091",
-  appId: "1:554353569091:web:5f7b2d67c92fdc3d86d3f6",
-  measurementId: "G-5N03NL56NJ"
-};
+<!-- Firebase Config — tách riêng, không cần sửa khi update webapp -->
+<script src="firebase-config.js"></script>
 
+<script>
 // ── Init Firebase ──
 let fbReady = false;
 try {
@@ -838,55 +825,5 @@ function showToast(msg, type = 'success') {
   setTimeout(() => el.classList.remove('show'), 3500);
 }
 </script>
-
-<!--
-╔══════════════════════════════════════════════════════════════════════╗
-║  📋 HƯỚNG DẪN DEPLOY LÊN FIREBASE HOSTING                        ║
-╠══════════════════════════════════════════════════════════════════════╣
-║                                                                    ║
-║  1. Tạo project Firebase (nếu chưa có):                           ║
-║     https://console.firebase.google.com                            ║
-║                                                                    ║
-║  2. Bật Firebase Auth:                                             ║
-║     Console > Authentication > Sign-in method > Email/Password     ║
-║     Tạo user: Authentication > Users > Add user                    ║
-║                                                                    ║
-║  3. Tạo Firestore Database:                                        ║
-║     Console > Firestore > Create database > Production mode        ║
-║     Rules mẫu (chỉ cho phép user đã đăng nhập):                   ║
-║                                                                    ║
-║     rules_version = '2';                                           ║
-║     service cloud.firestore {                                      ║
-║       match /databases/{database}/documents {                      ║
-║         match /stocks/{ticker} {                                   ║
-║           allow read, write: if request.auth != null;              ║
-║           match /ohlcv/{date} {                                    ║
-║             allow read, write: if request.auth != null;            ║
-║           }                                                        ║
-║         }                                                          ║
-║         match /daily_snapshots/{date} {                            ║
-║           allow read, write: if request.auth != null;              ║
-║           match /stocks/{ticker} {                                 ║
-║             allow read, write: if request.auth != null;            ║
-║           }                                                        ║
-║         }                                                          ║
-║       }                                                            ║
-║     }                                                              ║
-║                                                                    ║
-║  4. Lấy firebaseConfig:                                            ║
-║     Console > Project Settings > General > Your apps > Web app     ║
-║     Copy config object, paste vào biến firebaseConfig ở trên       ║
-║                                                                    ║
-║  5. Deploy:                                                        ║
-║     npm install -g firebase-tools                                  ║
-║     firebase login                                                 ║
-║     firebase init hosting     # chọn project, public dir = .       ║
-║     firebase deploy                                                ║
-║                                                                    ║
-║  Hoặc test local:                                                  ║
-║     firebase serve            # mở http://localhost:5000           ║
-║                                                                    ║
-╚══════════════════════════════════════════════════════════════════════╝
--->
 </body>
 </html>
