@@ -469,9 +469,9 @@ function handleTickerFile(input){
 }
 
 function renderColChecks(){
-  document.getElementById('col-checks').innerHTML=ALL_COLUMNS.map(c=>`<label class="col-check ${selectedCols.has(c.key)?'checked':''}" onclick="toggleCol(this,'${c.key}')"><input type="checkbox" ${selectedCols.has(c.key)?'checked':''}>${c.label}</label>`).join('');
+  document.getElementById('col-checks').innerHTML=ALL_COLUMNS.map(c=>`<div class="col-check ${selectedCols.has(c.key)?'checked':''}" onclick="toggleCol(this,'${c.key}')">${c.label}</div>`).join('');
 }
-function toggleCol(el,k){if(selectedCols.has(k))selectedCols.delete(k);else selectedCols.add(k);el.classList.toggle('checked');el.querySelector('input').checked=selectedCols.has(k);}
+function toggleCol(el,k){if(selectedCols.has(k))selectedCols.delete(k);else selectedCols.add(k);el.classList.toggle('checked');}
 function toggleAllCols(on){if(on)ALL_COLUMNS.forEach(c=>selectedCols.add(c.key));else selectedCols.clear();renderColChecks();}
 
 function parseTickerList(){
