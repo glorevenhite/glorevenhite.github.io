@@ -968,46 +968,50 @@ async function runVscoreEngine() {
       for (let i = u.ohlcv.length - 1; i >= 0; i--) {
         if (u.ohlcv[i].date <= targetYmd) { idx = i; break; }
       }
-      if (idx < 0) { tickerGtgd[tk] = { gtgd5: NaN, gtgd20: NaN, idx: -1 }; continue; }
+      if (idx < 0) { tickerGtgd[tk] = { gtgd5: 0, gtgd20: 0, idx: -1 }; continue; }
       u.lastIdx = idx;
 
       // gtgd_t cho 5/20 phiên gần nhất tính đến idx
-      const slice5 = [], slice20 = [];
+      // Phiên không khớp lệnh (volume = 0) hoặc CWAP NaN → coi là 0, KHÔNG skip
+      let sum5 = 0, sum20 = 0;
+      let n5 = 0, n20 = 0;
       for (let i = Math.max(0, idx - 4); i <= idx; i++) {
-        const g = u.cwap[i] * u.ohlcv[i].volume;
-        if (!isNaN(g)) slice5.push(g);
+        const cw = u.cwap[i];
+        const vol = u.ohlcv[i].volume || 0;
+        const g = (isNaN(cw) || vol === 0) ? 0 : cw * vol;
+        sum5 += g; n5++;
       }
       for (let i = Math.max(0, idx - 19); i <= idx; i++) {
-        const g = u.cwap[i] * u.ohlcv[i].volume;
-        if (!isNaN(g)) slice20.push(g);
+        const cw = u.cwap[i];
+        const vol = u.ohlcv[i].volume || 0;
+        const g = (isNaN(cw) || vol === 0) ? 0 : cw * vol;
+        sum20 += g; n20++;
       }
-      const g5 = slice5.length > 0 ? slice5.reduce((a,b) => a+b, 0) / slice5.length : NaN;
-      const g20 = slice20.length > 0 ? slice20.reduce((a,b) => a+b, 0) / slice20.length : NaN;
+      const g5  = n5  > 0 ? sum5  / n5  : 0;
+      const g20 = n20 > 0 ? sum20 / n20 : 0;
       tickerGtgd[tk] = { gtgd5: g5, gtgd20: g20, idx };
-      if (!isNaN(g5)) totalMktGtgd5 += g5;
-      if (!isNaN(g20)) totalMktGtgd20 += g20;
+      totalMktGtgd5  += g5;
+      totalMktGtgd20 += g20;
     }
 
     bar.style.width = '65%'; txt.textContent = 'Đang tính RSI, MFI-C, ROC...';
     await new Promise(r => setTimeout(r, 10));
 
-    // ─── Bước 5: Tính features cho từng ticker ───
-    // Với mỗi ticker, dùng phiên gần nhất ≤ targetYmd (đã set ở u.lastIdx).
-    // Không yêu cầu phải có dữ liệu đúng ngày targetYmd — phiên giao dịch gần nhất là đủ.
+    // ─── Bước 5: Tính features cho TOÀN BỘ ticker ───
+    // Không loại ticker nào — kể cả mới niêm yết / không khớp lệnh.
+    // Indicators thiếu lịch sử → fill 0. Liq/mkt_share thiếu → fill 0.
+    // Tất cả vào percentile rank, NaN không tồn tại trong logic mới.
     const features = [];
     for (const tk of Object.keys(universe)) {
       const u = universe[tk];
       const idx = u.lastIdx;
-      // Skip nếu idx invalid
-      if (idx == null || idx < 0 || idx >= u.ohlcv.length) continue;
-      // Skip nếu ticker có quá ít data lịch sử (< 21 phiên — không tính được RSI20/ROC20)
-      if (idx < 20) continue;
+      if (idx == null || idx < 0 || idx >= u.ohlcv.length) continue;  // chỉ skip nếu không có dòng nào ≤ targetYmd
 
       const closes = u.ohlcv.map(r => r.close);
       const volumes = u.ohlcv.map(r => r.volume);
       const cwapSer = u.cwap;
 
-      // Indicators
+      // Indicators — phiên thiếu lịch sử sẽ trả NaN, mình convert sang 0
       const rsi5  = computeRSI(closes, 5);
       const rsi20 = computeRSI(closes, 20);
       const roc5  = computeROC(closes, 5);
@@ -1017,26 +1021,28 @@ async function runVscoreEngine() {
 
       const close = closes[idx];
       const cwap_t = cwapSer[idx];
-      const mcap = close * u.shares;
+      const mcap = (close && u.shares) ? close * u.shares : 0;
       const g = tickerGtgd[tk];
+
+      const z = v => (v == null || isNaN(v)) ? 0 : v;  // helper: NaN → 0
 
       features.push({
         ticker: tk,
         exchange: u.exchange,
         date: targetDate,
-        last_date: u.ohlcv[idx].date,  // ngày phiên thực sự dùng (có thể < targetYmd nếu DB chưa update)
+        last_date: u.ohlcv[idx].date,
         close,
-        cwap: cwap_t,
+        cwap: isNaN(cwap_t) ? 0 : cwap_t,
         mcap,
-        mkt_share_5d:  totalMktGtgd5  > 0 && !isNaN(g.gtgd5)  ? g.gtgd5  / totalMktGtgd5  : NaN,
-        mkt_share_20d: totalMktGtgd20 > 0 && !isNaN(g.gtgd20) ? g.gtgd20 / totalMktGtgd20 : NaN,
-        liq_surge:     !isNaN(g.gtgd5) && !isNaN(g.gtgd20) && g.gtgd20 > 0 ? g.gtgd5 / g.gtgd20 : NaN,
-        roc5:   roc5[idx],
-        roc20:  roc20[idx],
-        rsi5:   rsi5[idx],
-        rsi20:  rsi20[idx],
-        mfic5:  mfic5[idx],
-        mfic20: mfic20[idx],
+        mkt_share_5d:  totalMktGtgd5  > 0 ? z(g.gtgd5)  / totalMktGtgd5  : 0,
+        mkt_share_20d: totalMktGtgd20 > 0 ? z(g.gtgd20) / totalMktGtgd20 : 0,
+        liq_surge:     g.gtgd20 > 0 ? z(g.gtgd5) / g.gtgd20 : 0,
+        roc5:   z(roc5[idx]),
+        roc20:  z(roc20[idx]),
+        rsi5:   z(rsi5[idx]),
+        rsi20:  z(rsi20[idx]),
+        mfic5:  z(mfic5[idx]),
+        mfic20: z(mfic20[idx]),
       });
     }
 
