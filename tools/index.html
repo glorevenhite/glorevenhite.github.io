@@ -215,6 +215,7 @@
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload dữ liệu</button>
         <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn &amp; Xuất CSV</button>
+        <button class="tab-btn" onclick="switchTab('vscore')">⚡ VSCORE Engine</button>
       </div>
 
       <!-- ══════ TAB 1: UPLOAD ══════ -->
@@ -321,6 +322,55 @@
         <div class="progress-wrap" id="query-progress"><div class="progress-bar-bg"><div class="progress-bar" id="query-pbar"></div></div><div class="progress-text" id="query-ptxt"></div></div>
       </div>
 
+      <!-- ══════ TAB 3: VSCORE ENGINE ══════ -->
+      <div id="tab-vscore" class="tab-panel">
+
+        <div class="query-card">
+          <h3>⚡ VSCORE Engine — Tính toán cross-sectional</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+            Load OHLCV từ Supabase view <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">vw_base</code>,
+            tính CWAP → RSI/MFI-C/ROC → MSCORE/TSCORE/VSCORE cross-sectional cho toàn universe theo ngày được chọn.
+          </p>
+          <div class="row">
+            <label>Ngày tính toán:</label>
+            <input type="date" id="v-date" class="date-input">
+            <button class="btn btn-accent" id="btn-vscore" onclick="runVscoreEngine()">⚡ Chạy VSCORE</button>
+          </div>
+          <div class="hint">⚠️ Engine cần load ~3 tháng dữ liệu lịch sử cho mỗi mã — quá trình này có thể mất 10-30 giây tùy size universe.</div>
+        </div>
+
+        <!-- VSCORE Results -->
+        <div id="vscore-results" style="display:none">
+          <div class="query-card">
+            <h3>📊 Chọn cột xuất CSV</h3>
+            <div class="row" style="margin-bottom:8px">
+              <button class="btn btn-outline" onclick="toggleAllVCols(true)" style="padding:6px 14px;font-size:12px">Chọn tất cả</button>
+              <button class="btn btn-outline" onclick="toggleAllVCols(false)" style="padding:6px 14px;font-size:12px">Bỏ chọn tất cả</button>
+              <button class="btn btn-outline" onclick="presetVCols('scores')" style="padding:6px 14px;font-size:12px">Chỉ scores</button>
+              <button class="btn btn-outline" onclick="presetVCols('full')" style="padding:6px 14px;font-size:12px">Đầy đủ</button>
+            </div>
+            <div class="col-checks" id="v-col-checks"></div>
+          </div>
+
+          <div class="results-panel">
+            <div class="results-header">
+              <h3 id="v-results-title">VSCORE Results</h3>
+              <div class="results-stats">
+                <div class="stat" style="color:var(--text-primary);font-weight:600"><span id="v-count">0</span> mã</div>
+              </div>
+            </div>
+            <div class="results-table-wrap">
+              <table class="results-table"><thead><tr id="v-thead"></tr></thead><tbody id="v-tbody"></tbody></table>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-success" onclick="downloadVscoreCSV()">↓ Xuất CSV</button>
+          </div>
+        </div>
+
+        <div class="progress-wrap" id="vscore-progress"><div class="progress-bar-bg"><div class="progress-bar" id="vscore-pbar"></div></div><div class="progress-text" id="vscore-ptxt"></div></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -365,7 +415,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
-function switchTab(t){ document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',t==='upload'?i===0:i===1)); document.getElementById('tab-upload').classList.toggle('active',t==='upload'); document.getElementById('tab-query').classList.toggle('active',t==='query'); }
+function switchTab(t){
+  const tabs = ['upload','query','vscore'];
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === t));
+  tabs.forEach(name => document.getElementById('tab-'+name).classList.toggle('active', name === t));
+}
 
 // ══════════ AUTH ══════════
 async function doLogin(){
@@ -569,6 +623,499 @@ function downloadQueryCSV(){
 // ══════════ HELPERS ══════════
 function dlBlob(csv,fn){const b=new Blob([csv],{type:'text/csv;charset=utf-8;'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=fn;a.click();URL.revokeObjectURL(u);}
 function showToast(msg,type='success'){const el=document.getElementById('toast');el.textContent=msg;el.className=`toast ${type} show`;setTimeout(()=>el.classList.remove('show'),3500);}
+
+// ══════════════════════════════════════════════════════════════════════
+// ⚡ VSCORE ENGINE — CWAP + RSI/MFI-C/ROC + MSCORE/TSCORE/VSCORE
+// ══════════════════════════════════════════════════════════════════════
+
+const SUPABASE_URL = (typeof supabaseConfig !== 'undefined') ? supabaseConfig.url : '';
+const SUPABASE_KEY = (typeof supabaseConfig !== 'undefined') ? supabaseConfig.anonKey : '';
+
+// VSCORE columns config
+const VSCORE_COLUMNS = [
+  { key:'rank_VSCORE', label:'Rank',    on:true,  fmt:'int' },
+  { key:'ticker',      label:'Ticker',  on:true,  fmt:'text' },
+  { key:'exchange',    label:'Sàn',     on:true,  fmt:'text' },
+  { key:'close',       label:'Close',   on:true,  fmt:'price' },
+  { key:'mcap',        label:'Mcap',    on:false, fmt:'large' },
+  { key:'cwap',        label:'CWAP',    on:false, fmt:'price5' },
+  { key:'rsi5',        label:'RSI5',    on:false, fmt:'pct2' },
+  { key:'rsi20',       label:'RSI20',   on:false, fmt:'pct2' },
+  { key:'mfic5',       label:'MFI-C5',  on:false, fmt:'pct2' },
+  { key:'mfic20',      label:'MFI-C20', on:false, fmt:'pct2' },
+  { key:'roc5',        label:'ROC5%',   on:false, fmt:'pct' },
+  { key:'roc20',       label:'ROC20%',  on:false, fmt:'pct' },
+  { key:'mkt_share_5d', label:'MS5d%',  on:false, fmt:'pct' },
+  { key:'mkt_share_20d',label:'MS20d%', on:false, fmt:'pct' },
+  { key:'liq_surge',   label:'LiqSurge',on:false, fmt:'num2' },
+  { key:'MSCORE',      label:'MSCORE',  on:true,  fmt:'num2' },
+  { key:'TSCORE',      label:'TSCORE',  on:true,  fmt:'num2' },
+  { key:'VSCORE',      label:'VSCORE',  on:true,  fmt:'num2' },
+];
+let vscoreSelectedCols = new Set(VSCORE_COLUMNS.filter(c => c.on).map(c => c.key));
+let vscoreRows = [];
+
+// ── Init date ──
+document.addEventListener('DOMContentLoaded', () => {
+  const today = new Date().toISOString().split('T')[0];
+  const vDate = document.getElementById('v-date');
+  if (vDate) vDate.value = today;
+  renderVColChecks();
+});
+
+// ══════════════ SUPABASE FETCH ══════════════
+async function fetchVwBase(targetDate) {
+  // Lấy data 90 ngày gần nhất tính từ targetDate (để có warm-up cho RSI/MFI/CWAP)
+  const target = new Date(targetDate);
+  const fromDate = new Date(target);
+  fromDate.setDate(fromDate.getDate() - 100); // 100 ngày để chắc chắn đủ ~70 phiên giao dịch
+  const fromYmd = fromDate.toISOString().split('T')[0].replace(/-/g, '');
+  const targetYmd = targetDate.replace(/-/g, '');
+
+  const url = `${SUPABASE_URL}/rest/v1/vw_base?select=ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,shares,market_capital,exchange&ticker_yyyymmdd=gte.${fromYmd}&ticker_yyyymmdd=lte.${targetYmd}&order=ticker.asc,ticker_yyyymmdd.asc`;
+
+  const res = await fetch(url, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Range-Unit': 'items',
+      'Prefer': 'count=exact',
+    }
+  });
+  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+  return await res.json();
+}
+
+// ══════════════ CWAP MODULE ══════════════
+// Tính CWAP cho 1 phiên — theo CWAP spec v1.1
+const KAPPA = 0.6;       // close-bias trong body
+const THETA_V = 0.2;     // volume gate cho HNX/UPCOM
+const EPS = 1e-9;
+
+function clip(x, lo, hi) { return Math.max(lo, Math.min(hi, x)); }
+
+function cwapOnePeriod(O, H, L, C, prevC, exchange) {
+  // Hiệu chỉnh O cho HNX/UPCOM
+  let Otilde = O;
+  if (exchange !== 'HOSE' && prevC != null && !isNaN(prevC)) {
+    Otilde = clip(prevC, L, H);
+  }
+
+  const R = H - L;
+  if (R < EPS) return C;  // fallback: phiên không biên
+
+  const maxOC = Math.max(Otilde, C);
+  const minOC = Math.min(Otilde, C);
+
+  const w_body = Math.abs(C - Otilde) / (R + EPS);
+  const w_up   = (H - maxOC) / (R + EPS);
+  const w_low  = (minOC - L) / (R + EPS);
+
+  const P_body = (1 - KAPPA) * Otilde + KAPPA * C;
+  const P_up   = (maxOC + H) / 2;
+  const P_low  = (L + minOC) / 2;
+
+  return w_body * P_body + w_up * P_up + w_low * P_low;
+}
+
+// Tính CWAP series cho 1 ticker — bao gồm volume gate
+function computeCwapSeries(ohlcv, exchange) {
+  // ohlcv = sorted array of {date, open, high, low, close, volume}
+  const cwap = new Array(ohlcv.length);
+  for (let i = 0; i < ohlcv.length; i++) {
+    const r = ohlcv[i];
+    const prevC = i > 0 ? ohlcv[i-1].close : null;
+
+    // Volume gate cho HNX/UPCOM (cần ≥ 20 phiên trước)
+    if (exchange !== 'HOSE' && i >= 20) {
+      const vols = ohlcv.slice(i - 20, i).map(x => x.volume).filter(v => v > 0).sort((a,b) => a - b);
+      if (vols.length > 0) {
+        const median = vols[Math.floor(vols.length / 2)];
+        if (r.volume < THETA_V * median) {
+          cwap[i] = NaN;  // untrusted
+          continue;
+        }
+      }
+    }
+
+    cwap[i] = cwapOnePeriod(r.open, r.high, r.low, r.close, prevC, exchange);
+  }
+  return cwap;
+}
+
+// ══════════════ INDICATORS ══════════════
+// RSI Wilder smoothing — close-based
+function computeRSI(closes, window) {
+  const n = closes.length;
+  if (n < window + 1) return new Array(n).fill(NaN);
+  const rsi = new Array(n).fill(NaN);
+  let avgGain = 0, avgLoss = 0;
+  // Initial SMA
+  for (let i = 1; i <= window; i++) {
+    const d = closes[i] - closes[i-1];
+    if (d > 0) avgGain += d; else avgLoss += -d;
+  }
+  avgGain /= window; avgLoss /= window;
+  rsi[window] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  // Wilder smoothing
+  const alpha = 1 / window;
+  for (let i = window + 1; i < n; i++) {
+    const d = closes[i] - closes[i-1];
+    const gain = d > 0 ? d : 0;
+    const loss = d < 0 ? -d : 0;
+    avgGain = (1 - alpha) * avgGain + alpha * gain;
+    avgLoss = (1 - alpha) * avgLoss + alpha * loss;
+    rsi[i] = avgLoss === 0 ? 100 : 100 - 100 / (1 + avgGain / avgLoss);
+  }
+  return rsi;
+}
+
+// MFI-C — dùng CWAP thay typical price, NaN propagation
+function computeMFIC(cwap, volume, window) {
+  const n = cwap.length;
+  const mfi = new Array(n).fill(NaN);
+  if (n < window + 1) return mfi;
+
+  const moneyFlow = cwap.map((c, i) => isNaN(c) ? NaN : c * volume[i]);
+  const delta = cwap.map((c, i) => i === 0 || isNaN(c) || isNaN(cwap[i-1]) ? NaN : c - cwap[i-1]);
+
+  for (let i = window; i < n; i++) {
+    let posSum = 0, negSum = 0, valid = 0;
+    for (let j = i - window + 1; j <= i; j++) {
+      if (isNaN(delta[j]) || isNaN(moneyFlow[j])) continue;
+      valid++;
+      if (delta[j] > 0) posSum += moneyFlow[j];
+      else if (delta[j] < 0) negSum += moneyFlow[j];
+    }
+    if (valid < window * 0.5) continue;  // skip nếu < 50% phiên hợp lệ
+    if (negSum === 0) { mfi[i] = 100; continue; }
+    const mfr = posSum / negSum;
+    mfi[i] = 100 - 100 / (1 + mfr);
+  }
+  return mfi;
+}
+
+// ROC — close-based
+function computeROC(closes, window) {
+  const n = closes.length;
+  const roc = new Array(n).fill(NaN);
+  for (let i = window; i < n; i++) {
+    if (closes[i - window] > 0) roc[i] = closes[i] / closes[i - window] - 1;
+  }
+  return roc;
+}
+
+// ══════════════ FEATURES + SCORES ══════════════
+function meanSkipNaN(arr) {
+  let sum = 0, n = 0;
+  for (const v of arr) { if (!isNaN(v) && v != null) { sum += v; n++; } }
+  return n > 0 ? sum / n : NaN;
+}
+
+// Percentile rank cross-sectional
+function percentileRank(values, floor = 0.01) {
+  // Lọc valid values, rank theo average method, trả pct [0,100]
+  const indexed = values.map((v, i) => ({ v, i })).filter(x => !isNaN(x.v) && x.v != null);
+  indexed.sort((a, b) => a.v - b.v);
+  const n = indexed.length;
+  const ranks = new Array(values.length).fill(NaN);
+
+  // Average rank cho ties
+  let i = 0;
+  while (i < n) {
+    let j = i;
+    while (j < n && indexed[j].v === indexed[i].v) j++;
+    const avgRank = (i + j - 1) / 2 + 1;  // 1-indexed
+    for (let k = i; k < j; k++) ranks[indexed[k].i] = (avgRank / n) * 100;
+    i = j;
+  }
+  // Apply floor
+  return ranks.map(r => isNaN(r) ? NaN : Math.max(floor, Math.round(r * 100) / 100));
+}
+
+function weightedGeoMean(rows, weights) {
+  // weights = {pcol: weight}
+  const cols = Object.keys(weights);
+  const ws = Object.values(weights);
+  const wsum = ws.reduce((a,b) => a+b, 0);
+  return rows.map(r => {
+    let logSum = 0, ok = true;
+    for (let i = 0; i < cols.length; i++) {
+      const v = r[cols[i]];
+      if (v == null || isNaN(v) || v <= 0) { ok = false; break; }
+      logSum += ws[i] * Math.log(v);
+    }
+    return ok ? Math.round(Math.exp(logSum / wsum) * 100) / 100 : NaN;
+  });
+}
+
+const M_WEIGHTS = { p_mcap: 1, p_mkt_share_20d: 1, p_mkt_share_5d: 1, p_liq_surge: 2 };
+const T_WEIGHTS = { p_roc5: 2, p_rsi5: 2, p_mfic5: 2, p_roc20: 1, p_rsi20: 1, p_mfic20: 1 };
+
+// ══════════════ MAIN ENGINE ══════════════
+async function runVscoreEngine() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    showToast('Supabase chưa được cấu hình trong firebase-config.js!', 'error');
+    return;
+  }
+  const targetDate = document.getElementById('v-date').value;
+  if (!targetDate) { showToast('Vui lòng chọn ngày.', 'error'); return; }
+
+  const btn = document.getElementById('btn-vscore'); btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Đang chạy...';
+  const pw = document.getElementById('vscore-progress'); pw.style.display = 'block';
+  const bar = document.getElementById('vscore-pbar'), txt = document.getElementById('vscore-ptxt');
+  bar.style.width = '5%'; txt.textContent = 'Đang load dữ liệu từ Supabase...';
+
+  try {
+    // ─── Bước 1: Fetch raw data ───
+    const raw = await fetchVwBase(targetDate);
+    if (!raw || raw.length === 0) { showToast('Không có dữ liệu.', 'error'); resetVscoreBtn(); return; }
+
+    bar.style.width = '20%'; txt.textContent = `Đã load ${raw.length} dòng. Đang nhóm theo ticker...`;
+    await new Promise(r => setTimeout(r, 10));
+
+    // ─── Bước 2: Group by ticker ───
+    const targetYmd = parseInt(targetDate.replace(/-/g, ''));
+    const universe = {};  // {ticker: {exchange, shares, ohlcv: [...]}}
+
+    for (const row of raw) {
+      const tk = row.ticker;
+      if (!universe[tk]) {
+        universe[tk] = {
+          ticker: tk,
+          exchange: row.exchange || 'HOSE',
+          shares: row.shares || 0,
+          ohlcv: []
+        };
+      }
+      universe[tk].ohlcv.push({
+        date: row.ticker_yyyymmdd,
+        open: parseFloat(row.ticker_open),
+        high: parseFloat(row.ticker_high),
+        low: parseFloat(row.ticker_low),
+        close: parseFloat(row.ticker_close),
+        volume: parseFloat(row.ticker_volume) || 0,
+      });
+    }
+
+    bar.style.width = '35%'; txt.textContent = 'Đang tính CWAP...';
+    await new Promise(r => setTimeout(r, 10));
+
+    // ─── Bước 3: CWAP precompute cho từng ticker ───
+    for (const tk of Object.keys(universe)) {
+      const u = universe[tk];
+      u.ohlcv.sort((a, b) => a.date - b.date);  // ensure sorted
+      u.cwap = computeCwapSeries(u.ohlcv, u.exchange);
+    }
+
+    bar.style.width = '50%'; txt.textContent = 'Đang tính tổng GTGD thị trường...';
+    await new Promise(r => setTimeout(r, 10));
+
+    // ─── Bước 4: Tính total_market_gtgd5/20 ───
+    // gtgd_t = cwap_t × volume_t, lấy 5/20 phiên gần nhất tính đến targetDate (skipna)
+    let totalMktGtgd5 = 0, totalMktGtgd20 = 0;
+    const tickerGtgd = {};  // {ticker: {gtgd5, gtgd20}}
+
+    for (const tk of Object.keys(universe)) {
+      const u = universe[tk];
+      // Tìm idx của targetDate (hoặc gần nhất ≤ targetDate)
+      let idx = -1;
+      for (let i = u.ohlcv.length - 1; i >= 0; i--) {
+        if (u.ohlcv[i].date <= targetYmd) { idx = i; break; }
+      }
+      if (idx < 0) { tickerGtgd[tk] = { gtgd5: NaN, gtgd20: NaN, idx: -1 }; continue; }
+      u.lastIdx = idx;
+
+      // gtgd_t cho 5/20 phiên gần nhất tính đến idx
+      const slice5 = [], slice20 = [];
+      for (let i = Math.max(0, idx - 4); i <= idx; i++) {
+        const g = u.cwap[i] * u.ohlcv[i].volume;
+        if (!isNaN(g)) slice5.push(g);
+      }
+      for (let i = Math.max(0, idx - 19); i <= idx; i++) {
+        const g = u.cwap[i] * u.ohlcv[i].volume;
+        if (!isNaN(g)) slice20.push(g);
+      }
+      const g5 = slice5.length > 0 ? slice5.reduce((a,b) => a+b, 0) / slice5.length : NaN;
+      const g20 = slice20.length > 0 ? slice20.reduce((a,b) => a+b, 0) / slice20.length : NaN;
+      tickerGtgd[tk] = { gtgd5: g5, gtgd20: g20, idx };
+      if (!isNaN(g5)) totalMktGtgd5 += g5;
+      if (!isNaN(g20)) totalMktGtgd20 += g20;
+    }
+
+    bar.style.width = '65%'; txt.textContent = 'Đang tính RSI, MFI-C, ROC...';
+    await new Promise(r => setTimeout(r, 10));
+
+    // ─── Bước 5: Tính features cho từng ticker ───
+    const features = [];
+    for (const tk of Object.keys(universe)) {
+      const u = universe[tk];
+      const idx = u.lastIdx;
+      if (idx < 0 || u.ohlcv[idx].date !== targetYmd) continue;  // không có data ngày target
+
+      const closes = u.ohlcv.map(r => r.close);
+      const volumes = u.ohlcv.map(r => r.volume);
+      const cwapSer = u.cwap;
+
+      // Indicators
+      const rsi5  = computeRSI(closes, 5);
+      const rsi20 = computeRSI(closes, 20);
+      const roc5  = computeROC(closes, 5);
+      const roc20 = computeROC(closes, 20);
+      const mfic5  = computeMFIC(cwapSer, volumes, 5);
+      const mfic20 = computeMFIC(cwapSer, volumes, 20);
+
+      const close = closes[idx];
+      const cwap_t = cwapSer[idx];
+      const mcap = close * u.shares;
+      const g = tickerGtgd[tk];
+
+      features.push({
+        ticker: tk,
+        exchange: u.exchange,
+        date: targetDate,
+        close,
+        cwap: cwap_t,
+        mcap,
+        mkt_share_5d:  totalMktGtgd5  > 0 && !isNaN(g.gtgd5)  ? g.gtgd5  / totalMktGtgd5  : NaN,
+        mkt_share_20d: totalMktGtgd20 > 0 && !isNaN(g.gtgd20) ? g.gtgd20 / totalMktGtgd20 : NaN,
+        liq_surge:     !isNaN(g.gtgd5) && !isNaN(g.gtgd20) && g.gtgd20 > 0 ? g.gtgd5 / g.gtgd20 : NaN,
+        roc5:   roc5[idx],
+        roc20:  roc20[idx],
+        rsi5:   rsi5[idx],
+        rsi20:  rsi20[idx],
+        mfic5:  mfic5[idx],
+        mfic20: mfic20[idx],
+      });
+    }
+
+    bar.style.width = '85%'; txt.textContent = 'Đang xếp percentile và tính scores...';
+    await new Promise(r => setTimeout(r, 10));
+
+    // ─── Bước 6: Percentile rank cross-sectional ───
+    const M_COLS = ['mcap', 'mkt_share_20d', 'mkt_share_5d', 'liq_surge'];
+    const T_COLS = ['roc5', 'roc20', 'rsi5', 'rsi20', 'mfic5', 'mfic20'];
+    for (const col of [...M_COLS, ...T_COLS]) {
+      const vals = features.map(f => f[col]);
+      const ranks = percentileRank(vals, 0.01);
+      features.forEach((f, i) => f['p_' + col] = ranks[i]);
+    }
+
+    // ─── Bước 7: MSCORE, TSCORE, VSCORE ───
+    const mscores = weightedGeoMean(features, M_WEIGHTS);
+    const tscores = weightedGeoMean(features, T_WEIGHTS);
+    features.forEach((f, i) => {
+      f.MSCORE = mscores[i];
+      f.TSCORE = tscores[i];
+      // VSCORE = (M^2 × T)^(1/3)
+      if (!isNaN(f.MSCORE) && !isNaN(f.TSCORE) && f.MSCORE > 0 && f.TSCORE > 0) {
+        f.VSCORE = Math.round(Math.pow(Math.pow(f.MSCORE, 2) * f.TSCORE, 1/3) * 100) / 100;
+      } else {
+        f.VSCORE = NaN;
+      }
+    });
+
+    // ─── Bước 8: Rank ───
+    const sorted = features.filter(f => !isNaN(f.VSCORE)).sort((a, b) => b.VSCORE - a.VSCORE);
+    sorted.forEach((f, i) => f.rank_VSCORE = i + 1);
+    // Add NaN scores at the end without rank
+    features.filter(f => isNaN(f.VSCORE)).forEach(f => f.rank_VSCORE = null);
+
+    vscoreRows = features.sort((a, b) => {
+      if (a.rank_VSCORE == null) return 1;
+      if (b.rank_VSCORE == null) return -1;
+      return a.rank_VSCORE - b.rank_VSCORE;
+    });
+
+    bar.style.width = '100%'; txt.textContent = `Hoàn tất: ${vscoreRows.length} mã`;
+    renderVscoreResults();
+    showToast(`VSCORE hoàn tất: ${sorted.length}/${features.length} mã có score`, 'success');
+  } catch(e) {
+    showToast(`Lỗi: ${e.message}`, 'error');
+    console.error(e);
+  }
+  resetVscoreBtn();
+}
+
+function resetVscoreBtn() {
+  const btn = document.getElementById('btn-vscore');
+  btn.disabled = false;
+  btn.innerHTML = '⚡ Chạy VSCORE';
+}
+
+// ── Format value ──
+function fmtVscoreVal(key, val, fmt) {
+  if (val == null || (typeof val === 'number' && isNaN(val))) return '';
+  switch(fmt) {
+    case 'int':    return val;
+    case 'text':   return val;
+    case 'price':  return Number(val).toFixed(2);
+    case 'price5': return Number(val).toFixed(5);
+    case 'pct':    return (Number(val) * 100).toFixed(2);
+    case 'pct2':   return Number(val).toFixed(2);
+    case 'num2':   return Number(val).toFixed(2);
+    case 'large':  return Number(val).toLocaleString('en-US', { maximumFractionDigits: 0 });
+    default:       return val;
+  }
+}
+
+// ── Render columns checkboxes ──
+function renderVColChecks() {
+  const wrap = document.getElementById('v-col-checks');
+  if (!wrap) return;
+  wrap.innerHTML = VSCORE_COLUMNS.map(c =>
+    `<div class="col-check ${vscoreSelectedCols.has(c.key)?'checked':''}" onclick="toggleVCol(this,'${c.key}')">${c.label}</div>`
+  ).join('');
+}
+function toggleVCol(el, k) {
+  if (vscoreSelectedCols.has(k)) vscoreSelectedCols.delete(k); else vscoreSelectedCols.add(k);
+  el.classList.toggle('checked');
+  renderVscoreResults();
+}
+function toggleAllVCols(on) {
+  if (on) VSCORE_COLUMNS.forEach(c => vscoreSelectedCols.add(c.key));
+  else vscoreSelectedCols.clear();
+  renderVColChecks();
+  renderVscoreResults();
+}
+function presetVCols(preset) {
+  vscoreSelectedCols.clear();
+  if (preset === 'scores') {
+    ['rank_VSCORE','ticker','exchange','close','MSCORE','TSCORE','VSCORE'].forEach(k => vscoreSelectedCols.add(k));
+  } else if (preset === 'full') {
+    VSCORE_COLUMNS.forEach(c => vscoreSelectedCols.add(c.key));
+  }
+  renderVColChecks();
+  renderVscoreResults();
+}
+
+// ── Render results table ──
+function renderVscoreResults() {
+  if (vscoreRows.length === 0) return;
+  const cols = VSCORE_COLUMNS.filter(c => vscoreSelectedCols.has(c.key));
+  document.getElementById('v-thead').innerHTML = cols.map(c => `<th>${c.label}</th>`).join('');
+  document.getElementById('v-count').textContent = vscoreRows.length;
+  document.getElementById('v-results-title').textContent = `VSCORE — ${document.getElementById('v-date').value}`;
+  const tb = document.getElementById('v-tbody');
+  tb.innerHTML = vscoreRows.slice(0, 300).map(r =>
+    '<tr>' + cols.map(c => `<td${c.key === 'ticker' ? ' class="ticker-cell"' : ''}>${fmtVscoreVal(c.key, r[c.key], c.fmt)}</td>`).join('') + '</tr>'
+  ).join('');
+  document.getElementById('vscore-results').style.display = 'block';
+}
+
+// ── Download CSV ──
+function downloadVscoreCSV() {
+  if (vscoreRows.length === 0) return;
+  const cols = VSCORE_COLUMNS.filter(c => vscoreSelectedCols.has(c.key));
+  const header = cols.map(c => c.key).join(',');
+  const lines = vscoreRows.map(r => cols.map(c => {
+    const v = r[c.key];
+    if (v == null || (typeof v === 'number' && isNaN(v))) return '';
+    return v;
+  }).join(','));
+  dlBlob([header, ...lines].join('\n'), `vincap_vscore_${document.getElementById('v-date').value}.csv`);
+}
 </script>
 </body>
 </html>
