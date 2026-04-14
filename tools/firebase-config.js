@@ -14,3 +14,8 @@ const firebaseConfig = {
   appId: "1:554353569091:web:5f7b2d67c92fdc3d86d3f6",
   measurementId: "G-5N03NL56NJ"
 };
+
+const supabaseConfig = {
+  url:     "https://vsdmdqmiktgkgfohfwsp.supabase.co",
+  anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZzZG1kcW1pa3Rna2dmb2hmd3NwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg1MTA1NzcsImV4cCI6MjA3NDA4NjU3N30.aDj6rg-juNL0dGK_JGUhJKLHulDG3KMdUKQXFpUGxbU"
+};
