@@ -853,6 +853,15 @@ const M_WEIGHTS = { p_mcap: 1, p_mkt_share_20d: 1, p_mkt_share_5d: 1, p_liq_surg
 const T_WEIGHTS = { p_roc5: 2, p_rsi5: 2, p_mfic5: 2, p_roc20: 1, p_rsi20: 1, p_mfic20: 1 };
 
 // ══════════════ MAIN ENGINE ══════════════
+// Normalize ticker_yyyymmdd thành integer 20260410, dù DB trả về int hay string
+function normYmd(v) {
+  if (v == null) return null;
+  if (typeof v === 'number') return v;
+  const s = String(v).replace(/-/g, '').slice(0, 8);
+  const n = parseInt(s, 10);
+  return isNaN(n) ? null : n;
+}
+
 async function runVscoreEngine() {
   if (!SUPABASE_URL || !SUPABASE_KEY) {
     showToast('Supabase chưa được cấu hình trong firebase-config.js!', 'error');
@@ -876,25 +885,30 @@ async function runVscoreEngine() {
     await new Promise(r => setTimeout(r, 10));
 
     // ─── Bước 2: Group by ticker ───
-    const targetYmd = parseInt(targetDate.replace(/-/g, ''));
+    const targetYmd = normYmd(targetDate);
     const universe = {};  // {ticker: {exchange, shares, ohlcv: [...]}}
 
     for (const row of raw) {
       const tk = row.ticker;
+      const dt = normYmd(row.ticker_yyyymmdd);
+      if (!tk || dt == null) continue;  // skip invalid rows
+      const c = parseFloat(row.ticker_close);
+      if (isNaN(c) || c <= 0) continue;  // skip rows không có close
+
       if (!universe[tk]) {
         universe[tk] = {
           ticker: tk,
           exchange: row.exchange || 'HOSE',
-          shares: row.shares || 0,
+          shares: parseFloat(row.shares) || 0,
           ohlcv: []
         };
       }
       universe[tk].ohlcv.push({
-        date: row.ticker_yyyymmdd,
-        open: parseFloat(row.ticker_open),
-        high: parseFloat(row.ticker_high),
-        low: parseFloat(row.ticker_low),
-        close: parseFloat(row.ticker_close),
+        date:   dt,
+        open:   parseFloat(row.ticker_open)  || c,
+        high:   parseFloat(row.ticker_high)  || c,
+        low:    parseFloat(row.ticker_low)   || c,
+        close:  c,
         volume: parseFloat(row.ticker_volume) || 0,
       });
     }
@@ -952,7 +966,9 @@ async function runVscoreEngine() {
     for (const tk of Object.keys(universe)) {
       const u = universe[tk];
       const idx = u.lastIdx;
-      if (idx < 0 || u.ohlcv[idx].date !== targetYmd) continue;  // không có data ngày target
+      // Skip nếu idx invalid hoặc ticker không có data ngày target
+      if (idx == null || idx < 0 || idx >= u.ohlcv.length) continue;
+      if (u.ohlcv[idx].date !== targetYmd) continue;
 
       const closes = u.ohlcv.map(r => r.close);
       const volumes = u.ohlcv.map(r => r.volume);
