@@ -666,25 +666,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ══════════════ SUPABASE FETCH ══════════════
 async function fetchVwBase(targetDate) {
-  // Lấy data 90 ngày gần nhất tính từ targetDate (để có warm-up cho RSI/MFI/CWAP)
+  // Lấy data 100 ngày gần nhất tính từ targetDate (để có warm-up cho RSI/MFI/CWAP)
   const target = new Date(targetDate);
   const fromDate = new Date(target);
-  fromDate.setDate(fromDate.getDate() - 100); // 100 ngày để chắc chắn đủ ~70 phiên giao dịch
+  fromDate.setDate(fromDate.getDate() - 100);
   const fromYmd = fromDate.toISOString().split('T')[0].replace(/-/g, '');
   const targetYmd = targetDate.replace(/-/g, '');
 
-  const url = `${SUPABASE_URL}/rest/v1/vw_base?select=ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,shares,market_capital,exchange&ticker_yyyymmdd=gte.${fromYmd}&ticker_yyyymmdd=lte.${targetYmd}&order=ticker.asc,ticker_yyyymmdd.asc`;
+  const baseUrl = `${SUPABASE_URL}/rest/v1/vw_base?select=ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,shares,market_capital,exchange&ticker_yyyymmdd=gte.${fromYmd}&ticker_yyyymmdd=lte.${targetYmd}&order=ticker.asc,ticker_yyyymmdd.asc`;
 
-  const res = await fetch(url, {
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Range-Unit': 'items',
-      'Prefer': 'count=exact',
+  // Supabase REST API mặc định giới hạn 1000 rows/request
+  // → phải dùng Range header để phân trang qua nhiều lần fetch
+  const PAGE_SIZE = 1000;
+  let allRows = [];
+  let from = 0;
+  const txt = document.getElementById('vscore-ptxt');
+
+  while (true) {
+    const to = from + PAGE_SIZE - 1;
+    const res = await fetch(baseUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Range-Unit': 'items',
+        'Range': `${from}-${to}`,
+        'Prefer': 'count=exact',
+      }
+    });
+    if (!res.ok && res.status !== 206) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+
+    const chunk = await res.json();
+    if (!Array.isArray(chunk) || chunk.length === 0) break;
+    allRows = allRows.concat(chunk);
+
+    // Update progress
+    if (txt) txt.textContent = `Đã load ${allRows.length} dòng...`;
+
+    // Parse Content-Range để biết tổng số rows: "0-999/12345"
+    const cr = res.headers.get('Content-Range');
+    if (cr) {
+      const total = parseInt(cr.split('/')[1], 10);
+      if (!isNaN(total) && allRows.length >= total) break;
     }
-  });
-  if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
-  return await res.json();
+    if (chunk.length < PAGE_SIZE) break;  // last page
+
+    from += PAGE_SIZE;
+  }
+
+  return allRows;
 }
 
 // ══════════════ CWAP MODULE ══════════════
