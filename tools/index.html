@@ -636,6 +636,7 @@ const VSCORE_COLUMNS = [
   { key:'rank_VSCORE', label:'Rank',    on:true,  fmt:'int' },
   { key:'ticker',      label:'Ticker',  on:true,  fmt:'text' },
   { key:'exchange',    label:'Sàn',     on:true,  fmt:'text' },
+  { key:'last_date',   label:'Phiên',   on:true,  fmt:'int' },
   { key:'close',       label:'Close',   on:true,  fmt:'price' },
   { key:'mcap',        label:'Mcap',    on:false, fmt:'large' },
   { key:'cwap',        label:'CWAP',    on:false, fmt:'price5' },
@@ -962,13 +963,16 @@ async function runVscoreEngine() {
     await new Promise(r => setTimeout(r, 10));
 
     // ─── Bước 5: Tính features cho từng ticker ───
+    // Với mỗi ticker, dùng phiên gần nhất ≤ targetYmd (đã set ở u.lastIdx).
+    // Không yêu cầu phải có dữ liệu đúng ngày targetYmd — phiên giao dịch gần nhất là đủ.
     const features = [];
     for (const tk of Object.keys(universe)) {
       const u = universe[tk];
       const idx = u.lastIdx;
-      // Skip nếu idx invalid hoặc ticker không có data ngày target
+      // Skip nếu idx invalid
       if (idx == null || idx < 0 || idx >= u.ohlcv.length) continue;
-      if (u.ohlcv[idx].date !== targetYmd) continue;
+      // Skip nếu ticker có quá ít data lịch sử (< 21 phiên — không tính được RSI20/ROC20)
+      if (idx < 20) continue;
 
       const closes = u.ohlcv.map(r => r.close);
       const volumes = u.ohlcv.map(r => r.volume);
@@ -991,6 +995,7 @@ async function runVscoreEngine() {
         ticker: tk,
         exchange: u.exchange,
         date: targetDate,
+        last_date: u.ohlcv[idx].date,  // ngày phiên thực sự dùng (có thể < targetYmd nếu DB chưa update)
         close,
         cwap: cwap_t,
         mcap,
