@@ -879,8 +879,8 @@ function weightedGeoMean(rows, weights) {
   });
 }
 
-const M_WEIGHTS = { p_mcap: 2, p_mkt_share_20d: 1, p_mkt_share_5d: 1, p_liq_surge: 1 };
-const T_WEIGHTS = { p_roc5: 2, p_rsi5: 2, p_mfic5: 2, p_roc20: 1, p_rsi20: 1, p_mfic20: 1 };
+const M_WEIGHTS = { p_mcap: 2, p_mkt_share_20d: 1, p_mkt_share_5d: 1 };
+const T_WEIGHTS = { p_roc5: 2, p_rsi5: 2, p_mfic5: 2, p_liq_surge: 2, p_roc20: 1, p_rsi20: 1, p_mfic20: 1 };
 
 // ══════════════ MAIN ENGINE ══════════════
 // Normalize ticker_yyyymmdd thành integer 20260410, dù DB trả về int hay string
@@ -1050,8 +1050,8 @@ async function runVscoreEngine() {
     await new Promise(r => setTimeout(r, 10));
 
     // ─── Bước 6: Percentile rank cross-sectional ───
-    const M_COLS = ['mcap', 'mkt_share_20d', 'mkt_share_5d', 'liq_surge'];
-    const T_COLS = ['roc5', 'roc20', 'rsi5', 'rsi20', 'mfic5', 'mfic20'];
+    const M_COLS = ['mcap', 'mkt_share_20d', 'mkt_share_5d'];
+    const T_COLS = ['roc5', 'roc20', 'rsi5', 'rsi20', 'mfic5', 'mfic20', 'liq_surge'];
     for (const col of [...M_COLS, ...T_COLS]) {
       const vals = features.map(f => f[col]);
       const ranks = percentileRank(vals, 0.01);
