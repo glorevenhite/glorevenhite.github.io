@@ -654,6 +654,7 @@ const VSCORE_COLUMNS = [
   { key:'MSCORE',      label:'MSCORE',  on:true,  fmt:'num2' },
   { key:'TSCORE',      label:'TSCORE',  on:true,  fmt:'num2' },
   { key:'VSCORE',      label:'VSCORE',  on:true,  fmt:'num2' },
+  { key:'YSCORE',      label:'YSCORE',  on:true,  fmt:'num2' },
 ];
 let vscoreSelectedCols = new Set(VSCORE_COLUMNS.filter(c => c.on).map(c => c.key));
 let vscoreRows = [];
@@ -1135,18 +1136,22 @@ async function runVscoreEngine() {
     // ─── Bước 6: Percentile rank cross-sectional ───
     const M_COLS = ['mcap', 'mkt_share_20d', 'mkt_share_5d'];
     const T_COLS = ['roc5', 'roc20', 'rsi5', 'rsi20', 'mfic5', 'mfic20', 'liq_surge'];
-    for (const col of [...M_COLS, ...T_COLS]) {
+    const Y_COLS = ['yz_vol5', 'yz_vol20'];
+    for (const col of [...M_COLS, ...T_COLS, ...Y_COLS]) {
       const vals = features.map(f => f[col]);
       const ranks = percentileRank(vals, 0.01);
       features.forEach((f, i) => f['p_' + col] = ranks[i]);
     }
 
-    // ─── Bước 7: MSCORE, TSCORE, VSCORE ───
+    // ─── Bước 7: MSCORE, TSCORE, VSCORE, YSCORE ───
+    const Y_WEIGHTS = { p_yz_vol5: 2, p_yz_vol20: 1 };
     const mscores = weightedGeoMean(features, M_WEIGHTS);
     const tscores = weightedGeoMean(features, T_WEIGHTS);
+    const yscores = weightedGeoMean(features, Y_WEIGHTS);
     features.forEach((f, i) => {
       f.MSCORE = mscores[i];
       f.TSCORE = tscores[i];
+      f.YSCORE = yscores[i];  // observable độc lập, không vào VSCORE
       // VSCORE = (M^2 × T)^(1/3)
       if (!isNaN(f.MSCORE) && !isNaN(f.TSCORE) && f.MSCORE > 0 && f.TSCORE > 0) {
         f.VSCORE = Math.round(Math.pow(Math.pow(f.MSCORE, 2) * f.TSCORE, 1/3) * 100) / 100;
@@ -1222,7 +1227,7 @@ function toggleAllVCols(on) {
 function presetVCols(preset) {
   vscoreSelectedCols.clear();
   if (preset === 'scores') {
-    ['rank_VSCORE','ticker','exchange','close','MSCORE','TSCORE','VSCORE'].forEach(k => vscoreSelectedCols.add(k));
+    ['rank_VSCORE','ticker','exchange','close','MSCORE','TSCORE','VSCORE','YSCORE'].forEach(k => vscoreSelectedCols.add(k));
   } else if (preset === 'full') {
     VSCORE_COLUMNS.forEach(c => vscoreSelectedCols.add(c.key));
   }
