@@ -1073,7 +1073,7 @@ async function runVscoreEngine() {
       // Chỉ cần set 1 lần nếu có giá trị
       if (universe[tk].analyst_target == null && row.analyst_target != null) {
         const at = parseFloat(row.analyst_target);
-        if (!isNaN(at) && at > 0) universe[tk].analyst_target = at;
+        if (!isNaN(at) && at > 0) universe[tk].analyst_target = at / 1000;  // VND gốc → chia 1000 đồng bộ với OHLC
       }
       universe[tk].ohlcv.push({
         date:   dt,
