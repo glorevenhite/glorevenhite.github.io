@@ -88,6 +88,13 @@
   .tab-btn:hover:not(.active) { color:var(--text-secondary); }
   .tab-panel { display:none; } .tab-panel.active { display:block; }
 
+  /* Sub-tabs (nested inside main tabs) */
+  .subtab-nav { display:flex; gap:8px; margin-bottom:24px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+  .subtab-btn { padding:8px 16px; font-size:13px; font-weight:500; color:var(--text-muted); background:transparent; border:1px solid var(--border); border-radius:8px; cursor:pointer; font-family:inherit; transition:all 0.15s; }
+  .subtab-btn.active { background:var(--accent-glow); color:var(--accent); border-color:var(--accent); }
+  .subtab-btn:hover:not(.active) { color:var(--text-secondary); border-color:var(--text-muted); }
+  .subtab-panel { display:none; } .subtab-panel.active { display:block; }
+
   /* Steps */
   .steps { display:flex; gap:0; margin-bottom:32px; background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; }
   .step { flex:1; padding:14px 20px; text-align:center; font-size:13px; font-weight:500; color:var(--text-muted); border-right:1px solid var(--border); transition:all 0.3s; }
@@ -212,17 +219,24 @@
     <div class="main">
       <div id="config-notice" class="config-notice">⚠️ <strong>Cấu hình Firebase chưa được thiết lập.</strong><br>Tạo file <code>firebase-config.js</code> cạnh file HTML này.</div>
 
-      <!-- Tab Nav -->
+      <!-- Tab Nav (3 nhóm chính) -->
       <div class="tab-nav">
         <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload dữ liệu</button>
-        <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn &amp; Xuất CSV</button>
+        <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn dữ liệu</button>
         <button class="tab-btn" onclick="switchTab('vscore')">⚡ VSCORE Engine</button>
-        <button class="tab-btn" onclick="switchTab('simplywall')">🧠 SimplyWall</button>
-        <button class="tab-btn" onclick="switchTab('fiintrade')">📊 FiinTrade</button>
       </div>
 
-      <!-- ══════ TAB 1: UPLOAD ══════ -->
+      <!-- ══════ TAB 1: UPLOAD DỮ LIỆU (3 sub-tabs) ══════ -->
       <div id="tab-upload" class="tab-panel active">
+        <!-- Sub-tab Nav -->
+        <div class="subtab-nav">
+          <button class="subtab-btn active" onclick="switchSubTab('upload', 'ssi')">📄 Dữ liệu SSI</button>
+          <button class="subtab-btn" onclick="switchSubTab('upload', 'simplywall')">🧠 Dữ liệu SimplyWall</button>
+          <button class="subtab-btn" onclick="switchSubTab('upload', 'fiintrade')">📊 Dữ liệu FiinTrade</button>
+        </div>
+
+        <!-- Sub-tab: SSI -->
+        <div id="subtab-upload-ssi" class="subtab-panel active">
         <div class="steps">
           <div class="step active" id="step-1"><span class="step-num">1</span>Upload CSV</div>
           <div class="step" id="step-2"><span class="step-num">2</span>Xử lý dữ liệu</div>
@@ -259,10 +273,20 @@
           </div>
           <div class="progress-wrap" id="upload-progress"><div class="progress-bar-bg"><div class="progress-bar" id="upload-pbar"></div></div><div class="progress-text" id="upload-ptxt"></div></div>
         </div>
+        </div>
+        <!-- /Sub-tab: SSI -->
       </div>
 
-      <!-- ══════ TAB 2: QUERY & EXPORT ══════ -->
+      <!-- ══════ TAB 2: TRUY VẤN DỮ LIỆU (2 sub-tabs) ══════ -->
       <div id="tab-query" class="tab-panel">
+        <!-- Sub-tab Nav -->
+        <div class="subtab-nav">
+          <button class="subtab-btn active" onclick="switchSubTab('query', 'firebase')">🔥 Truy vấn Firebase</button>
+          <button class="subtab-btn" onclick="switchSubTab('query', 'supabase')">⚡ Truy vấn Supabase</button>
+        </div>
+
+        <!-- Sub-tab: Firebase (= legacy query content) -->
+        <div id="subtab-query-firebase" class="subtab-panel active">
 
         <div class="query-card">
           <h3>📅 Chọn ngày và bộ lọc</h3>
@@ -323,6 +347,22 @@
         </div>
 
         <div class="progress-wrap" id="query-progress"><div class="progress-bar-bg"><div class="progress-bar" id="query-pbar"></div></div><div class="progress-text" id="query-ptxt"></div></div>
+        </div>
+        <!-- /Sub-tab: Firebase -->
+
+        <!-- Sub-tab: Supabase (placeholder) -->
+        <div id="subtab-query-supabase" class="subtab-panel">
+          <div class="query-card">
+            <h3>⚡ Truy vấn Supabase</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+              Chức năng truy vấn trực tiếp từ Supabase (table <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">vw_base</code>, <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">simplywall_snapshots</code>, <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">fiintrade_snapshots</code>) sẽ được bổ sung sau.
+            </p>
+            <p style="font-size:12px;color:var(--text-muted);font-style:italic;">
+              💡 Sắp ra mắt: query OHLCV theo ticker/date range, join với SimplyWall &amp; FiinTrade snapshots, xuất CSV.
+            </p>
+          </div>
+        </div>
+        <!-- /Sub-tab: Supabase -->
       </div>
 
       <!-- ══════ TAB 3: VSCORE ENGINE ══════ -->
@@ -374,8 +414,8 @@
         <div class="progress-wrap" id="vscore-progress"><div class="progress-bar-bg"><div class="progress-bar" id="vscore-pbar"></div></div><div class="progress-text" id="vscore-ptxt"></div></div>
       </div>
 
-      <!-- ══════ TAB 4: SIMPLYWALL ══════ -->
-      <div id="tab-simplywall" class="tab-panel">
+      <!-- (legacy) SimplyWall - chuyển thành subtab của Upload, ID giữ nguyên cho JS không break -->
+      <div id="tab-simplywall" class="subtab-panel">
         <div class="query-card">
           <h3>🧠 Upload dữ liệu SimplyWall Screener</h3>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
@@ -421,8 +461,8 @@
         </div>
       </div>
 
-      <!-- ══════ TAB 5: FIINTRADE ══════ -->
-      <div id="tab-fiintrade" class="tab-panel">
+      <!-- (legacy) FiinTrade - chuyển thành subtab của Upload, ID giữ nguyên cho JS không break -->
+      <div id="tab-fiintrade" class="subtab-panel">
         <div class="query-card">
           <h3>📊 Upload dữ liệu FiinTrade Bộ lọc cổ phiếu</h3>
           <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
@@ -510,13 +550,58 @@ document.addEventListener('DOMContentLoaded', () => {
   if (fbReady) document.getElementById('config-notice').style.display = 'none';
   auth.onAuthStateChanged(u => { if(u){showScreen('screen-main');document.getElementById('user-email').textContent=u.email;}else{showScreen('screen-login');} });
   renderColChecks();
+
+  // Move SimplyWall + FiinTrade panels INTO tab-upload (sub-tabs)
+  const uploadTab = document.getElementById('tab-upload');
+  const swPanel = document.getElementById('tab-simplywall');
+  const ftPanel = document.getElementById('tab-fiintrade');
+  if (uploadTab && swPanel) uploadTab.appendChild(swPanel);
+  if (uploadTab && ftPanel) uploadTab.appendChild(ftPanel);
 });
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+// 3 top tabs: upload, query, vscore
 function switchTab(t){
-  const tabs = ['upload','query','vscore','simplywall','fiintrade'];
-  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === t));
-  tabs.forEach(name => document.getElementById('tab-'+name).classList.toggle('active', name === t));
+  const tabs = ['upload','query','vscore'];
+  document.querySelectorAll('.tab-nav > .tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === t));
+  tabs.forEach(name => {
+    const el = document.getElementById('tab-'+name);
+    if (el) el.classList.toggle('active', name === t);
+  });
+}
+
+// Sub-tabs within a parent tab
+// parent: 'upload' | 'query'
+// sub: 'ssi' | 'simplywall' | 'fiintrade' (for upload)
+//      'firebase' | 'supabase' (for query)
+function switchSubTab(parent, sub){
+  const parentEl = document.getElementById('tab-' + parent);
+  if (!parentEl) return;
+  // Toggle subtab buttons
+  parentEl.querySelectorAll(':scope > .subtab-nav > .subtab-btn').forEach(b => {
+    const onclickAttr = b.getAttribute('onclick') || '';
+    b.classList.toggle('active', onclickAttr.includes(`'${sub}'`));
+  });
+  // Toggle subtab panels — naming convention:
+  //   upload: subtab-upload-ssi | tab-simplywall | tab-fiintrade
+  //   query:  subtab-query-firebase | subtab-query-supabase
+  const panelMap = {
+    'upload': {
+      'ssi':        'subtab-upload-ssi',
+      'simplywall': 'tab-simplywall',
+      'fiintrade':  'tab-fiintrade',
+    },
+    'query': {
+      'firebase':   'subtab-query-firebase',
+      'supabase':   'subtab-query-supabase',
+    },
+  };
+  const map = panelMap[parent] || {};
+  Object.entries(map).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.classList.toggle('active', key === sub);
+  });
 }
 
 // ══════════ AUTH ══════════
