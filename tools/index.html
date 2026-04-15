@@ -495,7 +495,7 @@
                 <thead><tr>
                   <th>Ticker</th><th>Sector</th><th>Mcap</th><th>Volume</th>
                   <th>Price</th><th>P/B</th><th>EPS</th><th>P/E</th><th>P/S</th>
-                  <th>BV/share</th><th>RPS</th>
+                  <th>BVPS</th><th>RPS</th>
                 </tr></thead>
                 <tbody id="ft-tbody"></tbody>
               </table>
@@ -1815,10 +1815,10 @@ function handleFiinTradeFile(input) {
         const ps       = parseFTNumber(r[8]);
 
         // Derived per-share fields (đơn vị nghìn VND/cổ phiếu, đồng bộ price)
-        // BV/share = price / pb     (cần pb > 0)
+        // BVPS = price / pb     (cần pb > 0)
         // RPS      = price / ps     (cần ps > 0)
         // EPS đã có sẵn, chỉ chia 1000
-        const bv_per_share = (price != null && pb && pb > 0) ? price / pb : null;
+        const bvps = (price != null && pb && pb > 0) ? price / pb : null;
         const rps          = (price != null && ps && ps > 0) ? price / ps : null;
 
         rows.push({
@@ -1831,7 +1831,7 @@ function handleFiinTradeFile(input) {
           eps,                                                           // nghìn VND/share
           pe,
           ps,
-          bv_per_share,                                                  // nghìn VND/share
+          bvps,                                                  // nghìn VND/share
           rps,                                                           // nghìn VND/share
         });
       }
@@ -1865,7 +1865,7 @@ function renderFiinTradeResults() {
       <td>${fmt(r.eps)}</td>
       <td>${fmt(r.pe)}</td>
       <td>${fmt(r.ps)}</td>
-      <td>${fmt(r.bv_per_share)}</td>
+      <td>${fmt(r.bvps)}</td>
       <td>${fmt(r.rps)}</td>
     </tr>
   `).join('');
@@ -1903,7 +1903,7 @@ async function uploadFiinTradeToSupabase() {
     eps:           r.eps,
     pe:            r.pe,
     ps:            r.ps,
-    bv_per_share:  r.bv_per_share,
+    bvps:  r.bvps,
     rps:           r.rps,
   }));
 
@@ -1976,7 +1976,7 @@ async function uploadFiinTradeToFirebase() {
           eps:           r.eps,
           pe:            r.pe,
           ps:            r.ps,
-          bv_per_share:  r.bv_per_share,
+          bvps:  r.bvps,
           rps:           r.rps,
           snapshot_date: snapshotDate,
           uploaded_at:   uploadedAt,
@@ -2001,7 +2001,7 @@ async function uploadFiinTradeToFirebase() {
 
 function downloadFiinTradeCSV() {
   if (fiinTradeRows.length === 0) return;
-  const header = 'ticker,sector,market_cap,volume,price,pb,eps,pe,ps,bv_per_share,rps';
+  const header = 'ticker,sector,market_cap,volume,price,pb,eps,pe,ps,bvps,rps';
   const lines = fiinTradeRows.map(r => [
     r.ticker,
     `"${(r.sector || '').replace(/"/g, '""')}"`,
@@ -2012,7 +2012,7 @@ function downloadFiinTradeCSV() {
     r.eps != null ? r.eps.toFixed(2) : '',
     r.pe != null ? r.pe.toFixed(2) : '',
     r.ps != null ? r.ps.toFixed(4) : '',
-    r.bv_per_share != null ? r.bv_per_share.toFixed(2) : '',
+    r.bvps != null ? r.bvps.toFixed(2) : '',
     r.rps != null ? r.rps.toFixed(2) : '',
   ].join(','));
   const date = document.getElementById('ft-date').value || 'snapshot';
