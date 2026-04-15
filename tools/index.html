@@ -12,6 +12,7 @@
 
 <!-- Papa Parse for CSV -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -217,6 +218,7 @@
         <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn &amp; Xuất CSV</button>
         <button class="tab-btn" onclick="switchTab('vscore')">⚡ VSCORE Engine</button>
         <button class="tab-btn" onclick="switchTab('simplywall')">🧠 SimplyWall</button>
+        <button class="tab-btn" onclick="switchTab('fiintrade')">📊 FiinTrade</button>
       </div>
 
       <!-- ══════ TAB 1: UPLOAD ══════ -->
@@ -419,6 +421,54 @@
         </div>
       </div>
 
+      <!-- ══════ TAB 5: FIINTRADE ══════ -->
+      <div id="tab-fiintrade" class="tab-panel">
+        <div class="query-card">
+          <h3>📊 Upload dữ liệu FiinTrade Bộ lọc cổ phiếu</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+            Upload file Excel (.xlsx) xuất từ FiinTrade. Webapp parse các cột (Vốn hóa, Khối lượng GD, Giá, P/B, EPS, P/E, P/S) và lưu vào table <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">fiintrade_snapshots</code> trên Supabase và/hoặc Firestore. Giá được chia 1000 để đồng bộ đơn vị OHLC.
+          </p>
+
+          <div class="row">
+            <label>Ngày snapshot:</label>
+            <input type="date" id="ft-date" class="date-input">
+          </div>
+
+          <div class="upload-card" style="max-width:500px;margin-top:8px;" onclick="document.getElementById('ft-file').click()">
+            <input type="file" id="ft-file" accept=".xlsx,.xls" style="display:none" onchange="handleFiinTradeFile(this)">
+            <div class="upload-exchange" style="color:var(--accent)">FiinTrade XLSX</div>
+            <div class="upload-icon">📊</div>
+            <div class="upload-label">FiinTrade_Bo_loc_co_phieu_*.xlsx</div>
+            <div class="upload-status" id="ft-status"></div>
+          </div>
+        </div>
+
+        <!-- FiinTrade Results -->
+        <div id="ft-results" style="display:none">
+          <div class="results-panel">
+            <div class="results-header">
+              <h3>Dữ liệu đã parse</h3>
+              <div class="results-stats"><div class="stat" style="color:var(--text-primary);font-weight:600"><span id="ft-count">0</span> mã</div></div>
+            </div>
+            <div class="results-table-wrap">
+              <table class="results-table">
+                <thead><tr>
+                  <th>Ticker</th><th>Sector</th><th>Mcap</th><th>Volume</th>
+                  <th>Price</th><th>P/B</th><th>EPS</th><th>P/E</th><th>P/S</th>
+                </tr></thead>
+                <tbody id="ft-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="row" style="gap:8px;flex-wrap:wrap">
+            <button class="btn btn-success" id="btn-ft-supabase" onclick="uploadFiinTradeToSupabase()">🚀 Upload Supabase</button>
+            <button class="btn btn-success" id="btn-ft-firebase" onclick="uploadFiinTradeToFirebase()">🔥 Upload Firebase</button>
+            <button class="btn btn-outline" onclick="downloadFiinTradeCSV()">↓ Tải CSV đã parse</button>
+          </div>
+          <div class="progress-wrap" id="ft-progress"><div class="progress-bar-bg"><div class="progress-bar" id="ft-pbar"></div></div><div class="progress-text" id="ft-ptxt"></div></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -464,7 +514,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function switchTab(t){
-  const tabs = ['upload','query','vscore','simplywall'];
+  const tabs = ['upload','query','vscore','simplywall','fiintrade'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === t));
   tabs.forEach(name => document.getElementById('tab-'+name).classList.toggle('active', name === t));
 }
@@ -1595,6 +1645,268 @@ function downloadSimplyWallCSV() {
   ].join(','));
   const date = document.getElementById('sw-date').value || 'snapshot';
   dlBlob([header, ...lines].join('\n'), `simplywall_${date}.csv`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 📊 FIINTRADE TAB — Parse XLSX & Upload to Supabase / Firebase
+// ══════════════════════════════════════════════════════════════════════
+
+let fiinTradeRows = [];
+
+document.addEventListener('DOMContentLoaded', () => {
+  const ftDate = document.getElementById('ft-date');
+  if (ftDate) ftDate.value = new Date().toISOString().split('T')[0];
+});
+
+function parseFTNumber(v) {
+  if (v == null || v === '' || v === 'n/a') return null;
+  const n = parseFloat(v);
+  return isNaN(n) ? null : n;
+}
+
+function handleFiinTradeFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array' });
+      const sheet = wb.Sheets[wb.SheetNames[0]];
+      // Header ở row 8 (1-indexed), data từ row 9 trở đi
+      const arr = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
+
+      // Tìm header row — chứa 'MÃ' ở col 0
+      let headerIdx = -1;
+      for (let i = 0; i < arr.length; i++) {
+        if (arr[i] && String(arr[i][0] || '').trim() === 'MÃ') { headerIdx = i; break; }
+      }
+      if (headerIdx < 0) throw new Error('Không tìm thấy header (cell có "MÃ")');
+
+      // Auto-detect snapshot date từ "Date Of Extract"
+      for (let i = 0; i < headerIdx; i++) {
+        if (arr[i] && String(arr[i][0] || '').trim() === 'Date Of Extract') {
+          const dt = arr[i][1];
+          if (dt) {
+            let d;
+            if (dt instanceof Date) d = dt;
+            else if (typeof dt === 'number') d = new Date((dt - 25569) * 86400 * 1000);
+            else d = new Date(dt);
+            if (!isNaN(d.getTime())) {
+              document.getElementById('ft-date').value = d.toISOString().split('T')[0];
+            }
+          }
+          break;
+        }
+      }
+
+      // Parse data rows
+      const rows = [];
+      for (let i = headerIdx + 1; i < arr.length; i++) {
+        const r = arr[i];
+        if (!r || !r[0]) continue;
+        const ticker = String(r[0]).trim().toUpperCase();
+        // Filter: ticker hợp lệ là 3 chữ cái (Vietnamese stock convention)
+        // Cũng bỏ qua các ticker dài bất thường (footer/contact lines)
+        // Doanh nghiệp Vietnamese stock: ticker đúng 3 ký tự (chữ + số đều OK)
+        // VD: VCB, FPT, A32, D2D — tất cả là doanh nghiệp
+        // Loại CW phái sinh (CFPT2401), ETF (E1VFVN30), fund (FUEVFVND) — đều > 3 ký tự
+        if (!/^[A-Z0-9]{3}$/.test(ticker)) continue;
+        // Ticker thật phải có data số ở các cột tiếp theo (mcap, vol, price...)
+        // Footer junk sẽ không có data số → loại
+        const hasNumericData = parseFTNumber(r[2]) != null
+                            || parseFTNumber(r[3]) != null
+                            || parseFTNumber(r[4]) != null;
+        if (!hasNumericData) continue;
+
+        const priceRaw = parseFTNumber(r[4]);
+        rows.push({
+          ticker,
+          sector:     r[1] ? String(r[1]).trim() : null,
+          market_cap: parseFTNumber(r[2]),                           // VND gốc
+          volume:     parseFTNumber(r[3]),
+          price:      priceRaw != null ? priceRaw / 1000 : null,     // ÷1000 đồng bộ OHLC
+          pb:         parseFTNumber(r[5]),
+          eps:        parseFTNumber(r[6]),
+          pe:         parseFTNumber(r[7]),
+          ps:         parseFTNumber(r[8]),
+        });
+      }
+
+      fiinTradeRows = rows;
+      document.getElementById('ft-status').textContent = `✓ ${rows.length} mã`;
+      renderFiinTradeResults();
+      showToast(`Đã parse ${rows.length} mã`, 'success');
+    } catch(err) {
+      showToast(`Lỗi: ${err.message}`, 'error');
+      console.error(err);
+    }
+  };
+  reader.onerror = () => showToast('Lỗi đọc file', 'error');
+  reader.readAsArrayBuffer(file);
+}
+
+function renderFiinTradeResults() {
+  document.getElementById('ft-count').textContent = fiinTradeRows.length;
+  const tbody = document.getElementById('ft-tbody');
+  const fmt = (v, dec=2) => v == null || isNaN(v) ? '' : Number(v).toFixed(dec);
+  const fmtLarge = v => v == null ? '' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
+  tbody.innerHTML = fiinTradeRows.slice(0, 300).map(r => `
+    <tr>
+      <td class="ticker-cell">${r.ticker}</td>
+      <td>${r.sector || ''}</td>
+      <td>${fmtLarge(r.market_cap)}</td>
+      <td>${fmtLarge(r.volume)}</td>
+      <td>${fmt(r.price)}</td>
+      <td>${fmt(r.pb)}</td>
+      <td>${fmt(r.eps)}</td>
+      <td>${fmt(r.pe)}</td>
+      <td>${fmt(r.ps)}</td>
+    </tr>
+  `).join('');
+  document.getElementById('ft-results').style.display = 'block';
+}
+
+// ── Upload to Supabase ──
+async function uploadFiinTradeToSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) { showToast('Supabase chưa cấu hình!', 'error'); return; }
+  if (fiinTradeRows.length === 0) return;
+  const snapshotDate = document.getElementById('ft-date').value;
+  if (!snapshotDate) { showToast('Vui lòng chọn ngày snapshot.', 'error'); return; }
+
+  const btn = document.getElementById('btn-ft-supabase');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Đang upload...';
+
+  const pw = document.getElementById('ft-progress'); pw.style.display = 'block';
+  const bar = document.getElementById('ft-pbar');
+  const txt = document.getElementById('ft-ptxt');
+
+  const snapshotId = crypto.randomUUID();
+  const userEmail = (typeof auth !== 'undefined' && auth.currentUser) ? auth.currentUser.email : 'unknown';
+
+  const payload = fiinTradeRows.map(r => ({
+    snapshot_id:   snapshotId,
+    snapshot_date: snapshotDate,
+    uploaded_by:   userEmail,
+    ticker:        r.ticker,
+    sector:        r.sector,
+    market_cap:    r.market_cap,
+    volume:        r.volume,
+    price:         r.price,
+    pb:            r.pb,
+    eps:           r.eps,
+    pe:            r.pe,
+    ps:            r.ps,
+  }));
+
+  try {
+    const CHUNK = 200;
+    let uploaded = 0;
+    for (let i = 0; i < payload.length; i += CHUNK) {
+      const slice = payload.slice(i, i + CHUNK);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/fiintrade_snapshots`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(slice),
+      });
+      if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+      uploaded += slice.length;
+      const pct = Math.round((uploaded / payload.length) * 100);
+      bar.style.width = pct + '%';
+      txt.textContent = `Supabase: ${uploaded}/${payload.length} (${pct}%)`;
+    }
+    showToast(`Supabase ✓ ${uploaded} mã (snapshot ${snapshotId.slice(0, 8)}...)`, 'success');
+  } catch(e) {
+    showToast(`Lỗi Supabase: ${e.message}`, 'error');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🚀 Upload Supabase';
+}
+
+// ── Upload to Firebase ──
+async function uploadFiinTradeToFirebase() {
+  if (!fbReady) { showToast('Firebase chưa cấu hình!', 'error'); return; }
+  if (!auth.currentUser) { showToast('Vui lòng đăng nhập Firebase trước.', 'error'); return; }
+  if (fiinTradeRows.length === 0) return;
+  const snapshotDate = document.getElementById('ft-date').value;
+  if (!snapshotDate) { showToast('Vui lòng chọn ngày snapshot.', 'error'); return; }
+
+  const btn = document.getElementById('btn-ft-firebase');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Đang upload...';
+
+  const pw = document.getElementById('ft-progress'); pw.style.display = 'block';
+  const bar = document.getElementById('ft-pbar');
+  const txt = document.getElementById('ft-ptxt');
+
+  try {
+    const db = firebase.firestore();
+    const userEmail = auth.currentUser.email;
+    const uploadedAt = firebase.firestore.FieldValue.serverTimestamp();
+    const BATCH = 450;
+    let uploaded = 0;
+
+    for (let i = 0; i < fiinTradeRows.length; i += BATCH) {
+      const batch = db.batch();
+      const slice = fiinTradeRows.slice(i, i + BATCH);
+      for (const r of slice) {
+        const ref = db.collection('fiintrade_snapshots').doc(snapshotDate).collection('stocks').doc(r.ticker);
+        batch.set(ref, {
+          ticker:        r.ticker,
+          sector:        r.sector,
+          market_cap:    r.market_cap,
+          volume:        r.volume,
+          price:         r.price,
+          pb:            r.pb,
+          eps:           r.eps,
+          pe:            r.pe,
+          ps:            r.ps,
+          snapshot_date: snapshotDate,
+          uploaded_at:   uploadedAt,
+          uploaded_by:   userEmail,
+        });
+      }
+      await batch.commit();
+      uploaded += slice.length;
+      const pct = Math.round((uploaded / fiinTradeRows.length) * 100);
+      bar.style.width = pct + '%';
+      txt.textContent = `Firebase: ${uploaded}/${fiinTradeRows.length} (${pct}%)`;
+    }
+    showToast(`Firebase ✓ ${uploaded} mã tại fiintrade_snapshots/${snapshotDate}/stocks/`, 'success');
+  } catch(e) {
+    showToast(`Lỗi Firebase: ${e.message}`, 'error');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🔥 Upload Firebase';
+}
+
+function downloadFiinTradeCSV() {
+  if (fiinTradeRows.length === 0) return;
+  const header = 'ticker,sector,market_cap,volume,price,pb,eps,pe,ps';
+  const lines = fiinTradeRows.map(r => [
+    r.ticker,
+    `"${(r.sector || '').replace(/"/g, '""')}"`,
+    r.market_cap ?? '',
+    r.volume ?? '',
+    r.price != null ? r.price.toFixed(2) : '',
+    r.pb != null ? r.pb.toFixed(4) : '',
+    r.eps != null ? r.eps.toFixed(2) : '',
+    r.pe != null ? r.pe.toFixed(2) : '',
+    r.ps != null ? r.ps.toFixed(4) : '',
+  ].join(','));
+  const date = document.getElementById('ft-date').value || 'snapshot';
+  dlBlob([header, ...lines].join('\n'), `fiintrade_${date}.csv`);
 }
 </script>
 </body>
