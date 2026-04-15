@@ -825,7 +825,10 @@ const VSCORE_COLUMNS = [
   { key:'close',       label:'Close',   on:true,  fmt:'price' },
   { key:'mcap',        label:'Mcap',    on:false, fmt:'large' },
   { key:'cwap',        label:'CWAP',    on:false, fmt:'price' },
-  { key:'analyst_target', label:'Target', on:false, fmt:'price' },
+  { key:'analyst_target', label:'T.Analyst', on:false, fmt:'price' },
+  { key:'target_base',    label:'T.Base',    on:false, fmt:'price' },
+  { key:'target_price',   label:'T.Used',    on:false, fmt:'price' },
+  { key:'target_source',  label:'T.Source',  on:false, fmt:'text' },
   { key:'upside',      label:'Upside%', on:false, fmt:'pct' },
   { key:'rsi5',        label:'RSI5',    on:false, fmt:'pct2' },
   { key:'rsi20',       label:'RSI20',   on:false, fmt:'pct2' },
@@ -869,7 +872,7 @@ async function fetchVwBase(targetDate) {
   const fromYmd = fromDate.toISOString().split('T')[0].replace(/-/g, '');
   const targetYmd = targetDate.replace(/-/g, '');
 
-  const baseUrl = `${SUPABASE_URL}/rest/v1/vw_base?select=ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,shares,market_capital,exchange,analyst_target&ticker_yyyymmdd=gte.${fromYmd}&ticker_yyyymmdd=lte.${targetYmd}&order=ticker.asc,ticker_yyyymmdd.asc`;
+  const baseUrl = `${SUPABASE_URL}/rest/v1/vw_base?select=ticker,ticker_yyyymmdd,ticker_open,ticker_high,ticker_low,ticker_close,ticker_volume,shares,market_capital,exchange,analyst_target,target_base&ticker_yyyymmdd=gte.${fromYmd}&ticker_yyyymmdd=lte.${targetYmd}&order=ticker.asc,ticker_yyyymmdd.asc`;
 
   // Supabase REST API mặc định giới hạn 1000 rows/request
   // → phải dùng Range header để phân trang qua nhiều lần fetch
@@ -1202,15 +1205,21 @@ async function runVscoreEngine() {
           ticker: tk,
           exchange: row.exchange || 'HOSE',
           shares: parseFloat(row.shares) || 0,
-          analyst_target: null,  // set khi gặp row có giá trị
+          analyst_target: null,  // từ SimplyWall (đã chia 1000)
+          target_base:    null,  // từ FiinTrade (đã ở đơn vị nghìn VND, không cần chia thêm)
           ohlcv: []
         };
       }
-      // analyst_target là constant per ticker trong view vw_base (JOIN latest snapshot)
-      // Chỉ cần set 1 lần nếu có giá trị
+      // analyst_target là constant per ticker trong view vw_base (JOIN latest snapshot SimplyWall)
       if (universe[tk].analyst_target == null && row.analyst_target != null) {
         const at = parseFloat(row.analyst_target);
-        if (!isNaN(at) && at > 0) universe[tk].analyst_target = at / 1000;  // VND gốc → chia 1000 đồng bộ với OHLC
+        if (!isNaN(at) && at > 0) universe[tk].analyst_target = at / 1000;  // VND gốc → chia 1000
+      }
+      // target_base là constant per ticker trong view vw_base (JOIN latest snapshot FiinTrade)
+      // Đã được lưu ở đơn vị nghìn VND/share (xem tab FiinTrade), KHÔNG chia 1000 lần nữa
+      if (universe[tk].target_base == null && row.target_base != null) {
+        const tb = parseFloat(row.target_base);
+        if (!isNaN(tb) && tb > 0) universe[tk].target_base = tb;
       }
       universe[tk].ohlcv.push({
         date:   dt,
@@ -1308,10 +1317,25 @@ async function runVscoreEngine() {
 
       const z = v => (v == null || isNaN(v)) ? 0 : v;  // helper: NaN → 0
 
-      // Analyst target: nếu không có → dùng close/1.2 làm target (discount 16.67%)
+      // ── Target hierarchy 3 cấp cho QSCORE ──
+      // Priority 1: analyst_target từ SimplyWall (chuyên gia định giá)
+      // Priority 2: target_base từ FiinTrade (P/B=1, P/E=7 Graham conservative)
+      // Priority 3: close/1.2 (fallback default — penalty 16.67% cho cổ phiếu không có data)
       const hasAnalystTarget = u.analyst_target != null && u.analyst_target > 0;
-      const target = hasAnalystTarget ? u.analyst_target : (close / 1.2);
-      // Upside = (target - close) / close
+      const hasTargetBase    = u.target_base    != null && u.target_base    > 0;
+
+      let target, target_source;
+      if (hasAnalystTarget) {
+        target = u.analyst_target;
+        target_source = 'analyst';
+      } else if (hasTargetBase) {
+        target = u.target_base;
+        target_source = 'fundamental';
+      } else {
+        target = close / 1.2;
+        target_source = 'default';
+      }
+
       // Upside dùng log return — đối xứng, cộng được, phân phối gần normal hơn
       const upside = (close > 0 && target > 0) ? Math.log(target / close) : 0;
 
@@ -1324,7 +1348,9 @@ async function runVscoreEngine() {
         cwap: isNaN(cwap_t) ? 0 : cwap_t,
         mcap,
         analyst_target: hasAnalystTarget ? u.analyst_target : null,
-        target_price: target,
+        target_base:    hasTargetBase    ? u.target_base    : null,
+        target_price:   target,
+        target_source,                                       // 'analyst' | 'fundamental' | 'default'
         upside,
         has_target: hasAnalystTarget ? 1 : 0,
         mkt_share_5d:  totalMktGtgd5  > 0 ? z(g.gtgd5)  / totalMktGtgd5  : 0,
