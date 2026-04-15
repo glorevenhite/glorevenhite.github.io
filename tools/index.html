@@ -496,6 +496,7 @@
                   <th>Ticker</th><th>Sector</th><th>Mcap</th><th>Volume</th>
                   <th>Price</th><th>P/B</th><th>EPS</th><th>P/E</th><th>P/S</th>
                   <th>BVPS</th><th>RPS</th>
+                  <th>T.PB</th><th>T.PE</th><th>Target</th>
                 </tr></thead>
                 <tbody id="ft-tbody"></tbody>
               </table>
@@ -1857,15 +1858,47 @@ function handleFiinTradeFile(input) {
         const price    = priceRaw != null ? priceRaw / 1000 : null;   // nghìn VND
         const pb       = parseFTNumber(getField(r, 'pb'));
         const epsRaw   = parseFTNumber(getField(r, 'eps'));            // VND gốc
-        const eps      = epsRaw != null ? epsRaw / 1000 : null;        // nghìn VND
+        let   eps      = epsRaw != null ? epsRaw / 1000 : null;        // nghìn VND
         const pe       = parseFTNumber(getField(r, 'pe'));
         const ps       = parseFTNumber(getField(r, 'ps'));
+
+        // Fallback: nếu eps thiếu nhưng có pe và price → suy ra eps_implied = price / pe
+        // Lưu ý: chỉ dùng khi pe > 0 (pe < 0 hàm ý eps < 0 → công ty lỗ, không reliable)
+        let eps_source = epsRaw != null ? 'reported' : null;
+        if (eps == null && pe != null && pe > 0 && price != null) {
+          eps = price / pe;
+          eps_source = 'implied_from_pe';
+        }
 
         // Derived per-share fields (đơn vị nghìn VND/cổ phiếu, đồng bộ price)
         // BVPS = price / pb     (cần pb > 0)
         // RPS  = price / ps     (cần ps > 0)
         const bvps = (price != null && pb && pb > 0) ? price / pb : null;
         const rps  = (price != null && ps && ps > 0) ? price / ps : null;
+
+        // ── VALUATION: target_base ──
+        // Định giá cơ bản theo P/B = 1 và P/E = 7 (Graham conservative)
+        // - target_pb = bvps × 1 = bvps    (cần bvps > 0, tức pb > 0 và price > 0)
+        // - target_pe = eps × PE_multiplier (7 nếu pb > 0, 3.5 nếu pb ≤ 0 — penalty cho vốn chủ âm)
+        // - target_base = min nếu cả 2 valid, fallback nếu thiếu, 50% × price nếu cả 2 invalid
+        const PB_TARGET = 1;
+        const PE_TARGET = 7;
+        // Nếu pb ≤ 0 (vốn chủ âm/0) → giảm PE multiplier xuống 3.5 (penalty cho rủi ro)
+        const pe_multiplier = (pb != null && pb > 0) ? PE_TARGET : PE_TARGET / 2;  // 7 hoặc 3.5
+        const target_pb = (bvps != null && bvps > 0) ? bvps * PB_TARGET : null;
+        const target_pe = (eps  != null && eps  > 0) ? eps  * pe_multiplier : null;
+
+        let target_base = null;
+        if (target_pb != null && target_pe != null) {
+          target_base = Math.min(target_pb, target_pe);   // Case 1: cả 2 valid → conservative
+        } else if (target_pb != null) {
+          target_base = target_pb;                         // Case 2: chỉ asset-based
+        } else if (target_pe != null) {
+          target_base = target_pe;                         // Case 3: chỉ earnings-based (đã có penalty nếu pb ≤ 0)
+        } else if (price != null && price > 0) {
+          target_base = price * 0.5;                       // Case 4: cả pb, pe đều âm → penalty 50% (distressed)
+        }
+        // else: thiếu cả price → null
 
         const sectorVal = getField(r, 'sector');
         rows.push({
@@ -1875,11 +1908,15 @@ function handleFiinTradeFile(input) {
           volume:        parseFTNumber(getField(r, 'volume')),
           price,                                                        // nghìn VND
           pb,
-          eps,                                                          // nghìn VND/share
+          eps,                                                          // nghìn VND/share (có thể implied)
+          eps_source,                                                   // 'reported' | 'implied_from_pe' | null
           pe,
           ps,
           bvps,                                                         // nghìn VND/share
           rps,                                                          // nghìn VND/share
+          target_pb,                                                    // nghìn VND/share
+          target_pe,                                                    // nghìn VND/share
+          target_base,                                                  // nghìn VND/share — final valuation
         });
       }
 
@@ -1901,7 +1938,9 @@ function renderFiinTradeResults() {
   const tbody = document.getElementById('ft-tbody');
   const fmt = (v, dec=2) => v == null || isNaN(v) ? '' : Number(v).toFixed(dec);
   const fmtLarge = v => v == null ? '' : Number(v).toLocaleString('en-US', { maximumFractionDigits: 0 });
-  tbody.innerHTML = fiinTradeRows.slice(0, 300).map(r => `
+  tbody.innerHTML = fiinTradeRows.slice(0, 300).map(r => {
+    const epsStyle = r.eps_source === 'implied_from_pe' ? ' style="font-style:italic;color:var(--text-muted)" title="Suy ra từ pe"' : '';
+    return `
     <tr>
       <td class="ticker-cell">${r.ticker}</td>
       <td>${r.sector || ''}</td>
@@ -1909,13 +1948,17 @@ function renderFiinTradeResults() {
       <td>${fmtLarge(r.volume)}</td>
       <td>${fmt(r.price)}</td>
       <td>${fmt(r.pb)}</td>
-      <td>${fmt(r.eps)}</td>
+      <td${epsStyle}>${fmt(r.eps)}</td>
       <td>${fmt(r.pe)}</td>
       <td>${fmt(r.ps)}</td>
       <td>${fmt(r.bvps)}</td>
       <td>${fmt(r.rps)}</td>
+      <td>${fmt(r.target_pb)}</td>
+      <td>${fmt(r.target_pe)}</td>
+      <td style="font-weight:600">${fmt(r.target_base)}</td>
     </tr>
-  `).join('');
+    `;
+  }).join('');
   document.getElementById('ft-results').style.display = 'block';
 }
 
@@ -1950,8 +1993,9 @@ async function uploadFiinTradeToSupabase() {
     eps:           r.eps,
     pe:            r.pe,
     ps:            r.ps,
-    bvps:  r.bvps,
+    bvps:          r.bvps,
     rps:           r.rps,
+    target_base:   r.target_base,
   }));
 
   try {
@@ -2023,8 +2067,9 @@ async function uploadFiinTradeToFirebase() {
           eps:           r.eps,
           pe:            r.pe,
           ps:            r.ps,
-          bvps:  r.bvps,
+          bvps:          r.bvps,
           rps:           r.rps,
+          target_base:   r.target_base,
           snapshot_date: snapshotDate,
           uploaded_at:   uploadedAt,
           uploaded_by:   userEmail,
@@ -2048,7 +2093,7 @@ async function uploadFiinTradeToFirebase() {
 
 function downloadFiinTradeCSV() {
   if (fiinTradeRows.length === 0) return;
-  const header = 'ticker,sector,market_cap,volume,price,pb,eps,pe,ps,bvps,rps';
+  const header = 'ticker,sector,market_cap,volume,price,pb,eps,eps_source,pe,ps,bvps,rps,target_pb,target_pe,target_base';
   const lines = fiinTradeRows.map(r => [
     r.ticker,
     `"${(r.sector || '').replace(/"/g, '""')}"`,
@@ -2057,10 +2102,14 @@ function downloadFiinTradeCSV() {
     r.price != null ? r.price.toFixed(2) : '',
     r.pb != null ? r.pb.toFixed(4) : '',
     r.eps != null ? r.eps.toFixed(2) : '',
+    r.eps_source ?? '',
     r.pe != null ? r.pe.toFixed(2) : '',
     r.ps != null ? r.ps.toFixed(4) : '',
     r.bvps != null ? r.bvps.toFixed(2) : '',
     r.rps != null ? r.rps.toFixed(2) : '',
+    r.target_pb != null ? r.target_pb.toFixed(2) : '',
+    r.target_pe != null ? r.target_pe.toFixed(2) : '',
+    r.target_base != null ? r.target_base.toFixed(2) : '',
   ].join(','));
   const date = document.getElementById('ft-date').value || 'snapshot';
   dlBlob([header, ...lines].join('\n'), `fiintrade_${date}.csv`);
