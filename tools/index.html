@@ -687,7 +687,7 @@ const VSCORE_COLUMNS = [
   { key:'last_date',   label:'Phiên',   on:true,  fmt:'int' },
   { key:'close',       label:'Close',   on:true,  fmt:'price' },
   { key:'mcap',        label:'Mcap',    on:false, fmt:'large' },
-  { key:'cwap',        label:'CWAP',    on:false, fmt:'price5' },
+  { key:'cwap',        label:'CWAP',    on:false, fmt:'price' },
   { key:'analyst_target', label:'Target', on:false, fmt:'price' },
   { key:'upside',      label:'Upside%', on:false, fmt:'pct' },
   { key:'rsi5',        label:'RSI5',    on:false, fmt:'pct2' },
@@ -1257,7 +1257,7 @@ async function runVscoreEngine() {
       else                     wBase = 0.050;
 
       const wPremium  = (!isNaN(f.BSCORE) && f.BSCORE > 0) ? (f.BSCORE / 100) * 0.0875 : 0;
-      const wAdjusted = (!isNaN(f.YSCORE) && f.YSCORE > 0) ? (f.YSCORE / 100) * 0.050  : 0;
+      const wAdjusted = (!isNaN(f.YSCORE) && f.YSCORE > 0) ? (f.YSCORE / 100) * 0.0875 : 0;
 
       f.weight_base     = Math.round(wBase     * 10000) / 10000;
       f.weight_premium  = Math.round(wPremium  * 10000) / 10000;
@@ -1356,15 +1356,28 @@ function renderVscoreResults() {
 }
 
 // ── Download CSV ──
+function fmtVscoreCSV(key, val, fmt) {
+  // CSV format: như display nhưng KHÔNG có % suffix (để parse lại được)
+  if (val == null || (typeof val === 'number' && isNaN(val))) return '';
+  switch(fmt) {
+    case 'int':    return val;
+    case 'text':   return val;
+    case 'price':  return Number(val).toFixed(2);   // close, cwap, target
+    case 'pct':    return (Number(val) * 100).toFixed(2);  // %  (×100, no suffix)
+    case 'pct2':   return Number(val).toFixed(2);
+    case 'num2':   return Number(val).toFixed(2);   // scores 0-100
+    case 'vol':    return Number(val).toFixed(4);
+    case 'wpct':   return (Number(val) * 100).toFixed(2);  // weight as % no suffix
+    case 'large':  return Number(val).toFixed(0);
+    default:       return val;
+  }
+}
+
 function downloadVscoreCSV() {
   if (vscoreRows.length === 0) return;
   const cols = VSCORE_COLUMNS.filter(c => vscoreSelectedCols.has(c.key));
   const header = cols.map(c => c.key).join(',');
-  const lines = vscoreRows.map(r => cols.map(c => {
-    const v = r[c.key];
-    if (v == null || (typeof v === 'number' && isNaN(v))) return '';
-    return v;
-  }).join(','));
+  const lines = vscoreRows.map(r => cols.map(c => fmtVscoreCSV(c.key, r[c.key], c.fmt)).join(','));
   dlBlob([header, ...lines].join('\n'), `vincap_vscore_${document.getElementById('v-date').value}.csv`);
 }
 
