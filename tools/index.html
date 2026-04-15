@@ -646,6 +646,8 @@ const VSCORE_COLUMNS = [
   { key:'mfic20',      label:'MFI-C20', on:false, fmt:'pct2' },
   { key:'roc5',        label:'ROC5%',   on:false, fmt:'pct' },
   { key:'roc20',       label:'ROC20%',  on:false, fmt:'pct' },
+  { key:'yz_vol5',     label:'YZVol5',  on:false, fmt:'vol' },
+  { key:'yz_vol20',    label:'YZVol20', on:false, fmt:'vol' },
   { key:'mkt_share_5d', label:'MS5d%',  on:false, fmt:'pct' },
   { key:'mkt_share_20d',label:'MS20d%', on:false, fmt:'pct' },
   { key:'liq_surge',   label:'LiqSurge',on:false, fmt:'num2' },
@@ -835,6 +837,82 @@ function computeROC(closes, window) {
   return roc;
 }
 
+// Yang-Zhang volatility — daily raw, sử dụng đầy đủ OHLC
+// σ²_YZ = σ²_O + k·σ²_C + (1-k)·σ²_RS
+//   σ²_O  : variance của overnight return ln(O_t/C_{t-1})
+//   σ²_C  : variance của open-close return ln(C_t/O_t)
+//   σ²_RS : Rogers-Satchell = ln(H/C)·ln(H/O) + ln(L/C)·ln(L/O)
+//   k     : 0.34 / (1.34 + (n+1)/(n-1))
+function computeYangZhang(ohlcv, window) {
+  const n = ohlcv.length;
+  const vol = new Array(n).fill(NaN);
+  if (n < window + 1 || window < 2) return vol;
+
+  // Precompute 3 log-return series
+  const rOvernight = new Array(n).fill(NaN);   // ln(O_t / C_{t-1})
+  const rOpenClose = new Array(n).fill(NaN);   // ln(C_t / O_t)
+  const rsTerm     = new Array(n).fill(NaN);   // Rogers-Satchell term
+
+  for (let i = 0; i < n; i++) {
+    const { open: O, high: H, low: L, close: C } = ohlcv[i];
+    if (!O || !H || !L || !C || O <= 0 || H <= 0 || L <= 0 || C <= 0) continue;
+
+    if (i > 0) {
+      const prevC = ohlcv[i-1].close;
+      if (prevC > 0) rOvernight[i] = Math.log(O / prevC);
+    }
+    rOpenClose[i] = Math.log(C / O);
+
+    // Rogers-Satchell: ln(H/C)·ln(H/O) + ln(L/C)·ln(L/O)
+    const lnHC = Math.log(H / C);
+    const lnHO = Math.log(H / O);
+    const lnLC = Math.log(L / C);
+    const lnLO = Math.log(L / O);
+    rsTerm[i] = lnHC * lnHO + lnLC * lnLO;
+  }
+
+  // Yang-Zhang k parameter
+  const k = 0.34 / (1.34 + (window + 1) / (window - 1));
+
+  // Rolling variance
+  function rollingVar(arr, idx, win) {
+    // sample variance of arr[idx-win+1 .. idx], skip NaN
+    let sum = 0, sumSq = 0, count = 0;
+    for (let j = idx - win + 1; j <= idx; j++) {
+      if (j < 0) continue;
+      const v = arr[j];
+      if (isNaN(v) || v == null) continue;
+      sum += v;
+      sumSq += v * v;
+      count++;
+    }
+    if (count < 2) return NaN;
+    const mean = sum / count;
+    return (sumSq - count * mean * mean) / (count - 1);  // sample variance (N-1)
+  }
+
+  for (let i = window; i < n; i++) {
+    const varO  = rollingVar(rOvernight, i, window);
+    const varC  = rollingVar(rOpenClose, i, window);
+    // σ²_RS là mean của rsTerm (không trừ mean, vì Rogers-Satchell đã drift-independent)
+    let rsSum = 0, rsCount = 0;
+    for (let j = i - window + 1; j <= i; j++) {
+      if (j < 0) continue;
+      const v = rsTerm[j];
+      if (isNaN(v) || v == null) continue;
+      rsSum += v;
+      rsCount++;
+    }
+    const varRS = rsCount > 0 ? rsSum / rsCount : NaN;
+
+    if (isNaN(varO) || isNaN(varC) || isNaN(varRS)) continue;
+    const varYZ = varO + k * varC + (1 - k) * varRS;
+    if (varYZ < 0) continue;  // edge case: numerical noise → skip
+    vol[i] = Math.sqrt(varYZ);
+  }
+  return vol;
+}
+
 // ══════════════ FEATURES + SCORES ══════════════
 function meanSkipNaN(arr) {
   let sum = 0, n = 0;
@@ -1018,6 +1096,9 @@ async function runVscoreEngine() {
       const roc20 = computeROC(closes, 20);
       const mfic5  = computeMFIC(cwapSer, volumes, 5);
       const mfic20 = computeMFIC(cwapSer, volumes, 20);
+      // Yang-Zhang volatility (daily raw)
+      const yzVol5  = computeYangZhang(u.ohlcv, 5);
+      const yzVol20 = computeYangZhang(u.ohlcv, 20);
 
       const close = closes[idx];
       const cwap_t = cwapSer[idx];
@@ -1043,6 +1124,8 @@ async function runVscoreEngine() {
         rsi20:  z(rsi20[idx]),
         mfic5:  z(mfic5[idx]),
         mfic20: z(mfic20[idx]),
+        yz_vol5:  z(yzVol5[idx]),
+        yz_vol20: z(yzVol20[idx]),
       });
     }
 
@@ -1111,6 +1194,7 @@ function fmtVscoreVal(key, val, fmt) {
     case 'pct':    return (Number(val) * 100).toFixed(2);
     case 'pct2':   return Number(val).toFixed(2);
     case 'num2':   return Number(val).toFixed(2);
+    case 'vol':    return Number(val).toFixed(4);   // daily raw YZ vol
     case 'large':  return Number(val).toLocaleString('en-US', { maximumFractionDigits: 0 });
     default:       return val;
   }
