@@ -216,6 +216,7 @@
         <button class="tab-btn active" onclick="switchTab('upload')">📤 Upload dữ liệu</button>
         <button class="tab-btn" onclick="switchTab('query')">🔍 Truy vấn &amp; Xuất CSV</button>
         <button class="tab-btn" onclick="switchTab('vscore')">⚡ VSCORE Engine</button>
+        <button class="tab-btn" onclick="switchTab('simplywall')">🧠 SimplyWall</button>
       </div>
 
       <!-- ══════ TAB 1: UPLOAD ══════ -->
@@ -371,6 +372,53 @@
         <div class="progress-wrap" id="vscore-progress"><div class="progress-bar-bg"><div class="progress-bar" id="vscore-pbar"></div></div><div class="progress-text" id="vscore-ptxt"></div></div>
       </div>
 
+      <!-- ══════ TAB 4: SIMPLYWALL ══════ -->
+      <div id="tab-simplywall" class="tab-panel">
+        <div class="query-card">
+          <h3>🧠 Upload dữ liệu SimplyWall Screener</h3>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:16px;line-height:1.6;">
+            Upload file CSV xuất từ SimplyWall Screener. Webapp sẽ parse các cột (Market Cap, Valuation, Growth, Returns...) và lưu vào table <code style="background:var(--bg-input);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;">simplywall_snapshots</code> trên Supabase. Mỗi lần upload là 1 snapshot riêng.
+          </p>
+
+          <div class="row">
+            <label>Ngày snapshot:</label>
+            <input type="date" id="sw-date" class="date-input">
+          </div>
+
+          <div class="upload-card" style="max-width:500px;margin-top:8px;" onclick="document.getElementById('sw-file').click()">
+            <input type="file" id="sw-file" accept=".csv" style="display:none" onchange="handleSimplyWallFile(this)">
+            <div class="upload-exchange" style="color:var(--accent)">SimplyWall CSV</div>
+            <div class="upload-icon">🧠</div>
+            <div class="upload-label">vn_stock_screener_full.csv</div>
+            <div class="upload-status" id="sw-status"></div>
+          </div>
+        </div>
+
+        <!-- SimplyWall Results -->
+        <div id="sw-results" style="display:none">
+          <div class="results-panel">
+            <div class="results-header">
+              <h3>Dữ liệu đã parse</h3>
+              <div class="results-stats"><div class="stat" style="color:var(--text-primary);font-weight:600"><span id="sw-count">0</span> mã</div></div>
+            </div>
+            <div class="results-table-wrap">
+              <table class="results-table">
+                <thead><tr>
+                  <th>Ticker</th><th>Company</th><th>Price</th><th>7D</th><th>1Y</th>
+                  <th>Mcap (VND)</th><th>Target</th><th>Val</th><th>Growth</th><th>DivYield</th>
+                </tr></thead>
+                <tbody id="sw-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="row">
+            <button class="btn btn-success" id="btn-sw-upload" onclick="uploadSimplyWallToSupabase()">🚀 Upload lên Supabase</button>
+            <button class="btn btn-outline" onclick="downloadSimplyWallCSV()">↓ Tải CSV đã parse</button>
+          </div>
+          <div class="progress-wrap" id="sw-progress"><div class="progress-bar-bg"><div class="progress-bar" id="sw-pbar"></div></div><div class="progress-text" id="sw-ptxt"></div></div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -416,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
 function switchTab(t){
-  const tabs = ['upload','query','vscore'];
+  const tabs = ['upload','query','vscore','simplywall'];
   document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', tabs[i] === t));
   tabs.forEach(name => document.getElementById('tab-'+name).classList.toggle('active', name === t));
 }
@@ -1260,6 +1308,222 @@ function downloadVscoreCSV() {
     return v;
   }).join(','));
   dlBlob([header, ...lines].join('\n'), `vincap_vscore_${document.getElementById('v-date').value}.csv`);
+}
+
+// ══════════════════════════════════════════════════════════════════════
+// 🧠 SIMPLYWALL TAB — Parse CSV & Upload to Supabase
+// ══════════════════════════════════════════════════════════════════════
+
+let simplyWallRows = [];
+
+// Init date
+document.addEventListener('DOMContentLoaded', () => {
+  const swDate = document.getElementById('sw-date');
+  if (swDate) swDate.value = new Date().toISOString().split('T')[0];
+});
+
+// ── Parsing helpers ──
+function parseSWPercent(s) {
+  // "15.4%" → 0.154 ; "n/a" → null
+  if (!s || s === 'n/a' || s.trim() === '') return null;
+  const n = parseFloat(s.replace('%', '').trim());
+  return isNaN(n) ? null : n / 100;
+}
+
+function parseSWMarketCap(s) {
+  // "₫1241.0t" → 1241.0 * 1e12 ; "₫19.5t" → 1.95e13 ; "₫500.0b" → 5e11
+  // t = trillion, b = billion, m = million
+  if (!s || s === 'n/a') return null;
+  const cleaned = s.replace(/₫|\s/g, '').trim();
+  const match = cleaned.match(/^([\d.]+)([tbm])?$/i);
+  if (!match) return null;
+  const num = parseFloat(match[1]);
+  if (isNaN(num)) return null;
+  const suffix = (match[2] || '').toLowerCase();
+  const mult = { t: 1e12, b: 1e9, m: 1e6 }[suffix] || 1;
+  return num * mult;
+}
+
+function parseSWNumber(s) {
+  // "101600.00" → 101600 ; "n/a" → null
+  if (!s || s === 'n/a' || s.trim() === '') return null;
+  const n = parseFloat(s.trim());
+  return isNaN(n) ? null : n;
+}
+
+function parseSWValuation(s) {
+  // "PE 116.1x" → { type: "PE", value: 116.1 }
+  if (!s || s === 'n/a' || s.trim() === '') return { type: null, value: null };
+  const match = s.trim().match(/^([A-Z]+)\s+([\d.]+)x?$/i);
+  if (!match) return { type: null, value: null };
+  return {
+    type: match[1].toUpperCase(),
+    value: parseFloat(match[2]) || null,
+  };
+}
+
+function parseSWGrowth(s) {
+  // "E 14.7%" → { type: "E", value: 0.147 }
+  if (!s || s === 'n/a' || s.trim() === '') return { type: null, value: null };
+  const match = s.trim().match(/^([A-Z]+)\s+(-?[\d.]+)%?$/i);
+  if (!match) return { type: null, value: null };
+  return {
+    type: match[1].toUpperCase(),
+    value: (parseFloat(match[2]) || 0) / 100,
+  };
+}
+
+// ── Handle file upload ──
+function handleSimplyWallFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  Papa.parse(file, {
+    encoding: 'utf-8',
+    header: true,
+    skipEmptyLines: true,
+    complete: (result) => {
+      simplyWallRows = result.data.map(row => {
+        const val = parseSWValuation(row['Valuation']);
+        const gr = parseSWGrowth(row['Growth']);
+        return {
+          ticker:          (row['Ticker'] || '').trim().toUpperCase(),
+          company:         (row['Company'] || '').trim(),
+          last_price:      parseSWNumber(row['Last Price (VND)']),
+          return_7d:       parseSWPercent(row['7D Return']),
+          return_1y:       parseSWPercent(row['1Y Return']),
+          market_cap:      parseSWMarketCap(row['Market Cap']),
+          analyst_target:  parseSWNumber(row['Analyst Target (VND)']),
+          valuation_type:  val.type,
+          valuation_value: val.value,
+          growth_type:     gr.type,
+          growth_value:    gr.value,
+          div_yield:       parseSWPercent(row['Div Yield']),
+        };
+      }).filter(r => r.ticker);
+
+      document.getElementById('sw-status').textContent = `✓ ${simplyWallRows.length} mã`;
+      renderSimplyWallResults();
+      showToast(`Đã parse ${simplyWallRows.length} mã`, 'success');
+    },
+    error: (err) => showToast(`Lỗi: ${err.message}`, 'error'),
+  });
+}
+
+function renderSimplyWallResults() {
+  document.getElementById('sw-count').textContent = simplyWallRows.length;
+  const tbody = document.getElementById('sw-tbody');
+  tbody.innerHTML = simplyWallRows.slice(0, 300).map(r => `
+    <tr>
+      <td class="ticker-cell">${r.ticker}</td>
+      <td>${r.company || ''}</td>
+      <td>${r.last_price != null ? r.last_price.toLocaleString() : ''}</td>
+      <td>${r.return_7d != null ? (r.return_7d * 100).toFixed(1) + '%' : ''}</td>
+      <td>${r.return_1y != null ? (r.return_1y * 100).toFixed(1) + '%' : ''}</td>
+      <td>${r.market_cap != null ? r.market_cap.toLocaleString('en-US', { maximumFractionDigits: 0 }) : ''}</td>
+      <td>${r.analyst_target != null ? r.analyst_target.toLocaleString() : ''}</td>
+      <td>${r.valuation_type ? `${r.valuation_type} ${r.valuation_value}` : ''}</td>
+      <td>${r.growth_type ? `${r.growth_type} ${(r.growth_value * 100).toFixed(1)}%` : ''}</td>
+      <td>${r.div_yield != null ? (r.div_yield * 100).toFixed(2) + '%' : ''}</td>
+    </tr>
+  `).join('');
+  document.getElementById('sw-results').style.display = 'block';
+}
+
+// ── Upload to Supabase ──
+async function uploadSimplyWallToSupabase() {
+  if (!SUPABASE_URL || !SUPABASE_KEY) {
+    showToast('Supabase chưa cấu hình!', 'error');
+    return;
+  }
+  if (simplyWallRows.length === 0) return;
+
+  const snapshotDate = document.getElementById('sw-date').value;
+  if (!snapshotDate) { showToast('Vui lòng chọn ngày snapshot.', 'error'); return; }
+
+  const btn = document.getElementById('btn-sw-upload');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Đang upload...';
+
+  const pw = document.getElementById('sw-progress'); pw.style.display = 'block';
+  const bar = document.getElementById('sw-pbar');
+  const txt = document.getElementById('sw-ptxt');
+
+  // Generate 1 snapshot_id cho toàn batch (Supabase default gen_random_uuid cũng được,
+  // nhưng mình generate client-side để đảm bảo toàn batch cùng 1 UUID)
+  const snapshotId = crypto.randomUUID();
+  const userEmail = auth.currentUser ? auth.currentUser.email : 'unknown';
+
+  const payload = simplyWallRows.map(r => ({
+    snapshot_id:     snapshotId,
+    snapshot_date:   snapshotDate,
+    uploaded_by:     userEmail,
+    ticker:          r.ticker,
+    company:         r.company,
+    last_price:      r.last_price,
+    return_7d:       r.return_7d,
+    return_1y:       r.return_1y,
+    market_cap:      r.market_cap,
+    analyst_target:  r.analyst_target,
+    valuation_type:  r.valuation_type,
+    valuation_value: r.valuation_value,
+    growth_type:     r.growth_type,
+    growth_value:    r.growth_value,
+    div_yield:       r.div_yield,
+  }));
+
+  try {
+    // Supabase chunk to avoid payload too large
+    const CHUNK = 200;
+    let uploaded = 0;
+    for (let i = 0; i < payload.length; i += CHUNK) {
+      const slice = payload.slice(i, i + CHUNK);
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/simplywall_snapshots`, {
+        method: 'POST',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal',
+        },
+        body: JSON.stringify(slice),
+      });
+      if (!res.ok) throw new Error(`Supabase ${res.status}: ${await res.text()}`);
+      uploaded += slice.length;
+      const pct = Math.round((uploaded / payload.length) * 100);
+      bar.style.width = pct + '%';
+      txt.textContent = `${uploaded}/${payload.length} (${pct}%)`;
+    }
+    showToast(`Đã upload ${uploaded} mã (snapshot ${snapshotId.slice(0, 8)}...)`, 'success');
+  } catch(e) {
+    showToast(`Lỗi: ${e.message}`, 'error');
+    console.error(e);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '🚀 Upload lên Supabase';
+}
+
+// ── Download parsed CSV ──
+function downloadSimplyWallCSV() {
+  if (simplyWallRows.length === 0) return;
+  const header = 'ticker,company,last_price,return_7d,return_1y,market_cap,analyst_target,valuation_type,valuation_value,growth_type,growth_value,div_yield';
+  const lines = simplyWallRows.map(r => [
+    r.ticker,
+    `"${(r.company || '').replace(/"/g, '""')}"`,
+    r.last_price ?? '',
+    r.return_7d ?? '',
+    r.return_1y ?? '',
+    r.market_cap ?? '',
+    r.analyst_target ?? '',
+    r.valuation_type ?? '',
+    r.valuation_value ?? '',
+    r.growth_type ?? '',
+    r.growth_value ?? '',
+    r.div_yield ?? '',
+  ].join(','));
+  const date = document.getElementById('sw-date').value || 'snapshot';
+  dlBlob([header, ...lines].join('\n'), `simplywall_${date}.csv`);
 }
 </script>
 </body>
