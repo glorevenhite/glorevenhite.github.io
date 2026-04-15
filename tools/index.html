@@ -1760,79 +1760,126 @@ function handleFiinTradeFile(input) {
       const data = new Uint8Array(e.target.result);
       const wb = XLSX.read(data, { type: 'array' });
       const sheet = wb.Sheets[wb.SheetNames[0]];
-      // Header ở row 8 (1-indexed), data từ row 9 trở đi
       const arr = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
 
-      // Tìm header row — chứa 'MÃ' ở col 0
-      let headerIdx = -1;
+      // Tìm header row — chứa 'MÃ' ở bất kỳ vị trí nào
+      let headerIdx = -1, tickerCol = -1;
       for (let i = 0; i < arr.length; i++) {
-        if (arr[i] && String(arr[i][0] || '').trim() === 'MÃ') { headerIdx = i; break; }
+        if (!arr[i]) continue;
+        for (let j = 0; j < arr[i].length; j++) {
+          if (String(arr[i][j] || '').trim() === 'MÃ') {
+            headerIdx = i; tickerCol = j; break;
+          }
+        }
+        if (headerIdx >= 0) break;
       }
       if (headerIdx < 0) throw new Error('Không tìm thấy header (cell có "MÃ")');
 
-      // Auto-detect snapshot date từ "Date Of Extract"
-      for (let i = 0; i < headerIdx; i++) {
-        if (arr[i] && String(arr[i][0] || '').trim() === 'Date Of Extract') {
-          const dt = arr[i][1];
-          if (dt) {
-            let d;
-            if (dt instanceof Date) d = dt;
-            else if (typeof dt === 'number') d = new Date((dt - 25569) * 86400 * 1000);
-            else d = new Date(dt);
-            if (!isNaN(d.getTime())) {
-              document.getElementById('ft-date').value = d.toISOString().split('T')[0];
-            }
+      // ── Map tên cột → vị trí (case-insensitive, trim, normalize) ──
+      // Webapp tự động phát hiện cột dựa vào tên, không phụ thuộc vào thứ tự cột trong file.
+      const headerRow = arr[headerIdx];
+      const norm = s => String(s || '').trim().toUpperCase().replace(/\s+/g, ' ');
+
+      // Aliases cho từng field — hỗ trợ nhiều biến thể tên cột FiinTrade có thể dùng
+      const COL_ALIASES = {
+        ticker:     ['MÃ', 'MA', 'TICKER', 'SYMBOL'],
+        sector:     ['NGÀNH', 'NGANH', 'SECTOR', 'INDUSTRY'],
+        market_cap: ['VỐN HÓA', 'VON HOA', 'MARKET CAP', 'MCAP', 'VỐN HOÁ'],
+        volume:     ['KHỐI LƯỢNG GD', 'KHOI LUONG GD', 'VOLUME', 'KLGD', 'KL'],
+        price:      ['GIÁ', 'GIA', 'PRICE', 'CLOSE'],
+        pb:         ['P/B (TTM)', 'P/B', 'PB', 'PB (TTM)'],
+        eps:        ['EPS (TTM)', 'EPS', 'EPS TTM'],
+        pe:         ['P/E (TTM)', 'P/E', 'PE', 'PE (TTM)'],
+        ps:         ['P/S (TTM)', 'P/S', 'PS', 'PS (TTM)'],
+      };
+
+      const colMap = {};
+      for (const [field, aliases] of Object.entries(COL_ALIASES)) {
+        const aliasSet = new Set(aliases.map(norm));
+        for (let j = 0; j < headerRow.length; j++) {
+          if (aliasSet.has(norm(headerRow[j]))) {
+            colMap[field] = j; break;
           }
-          break;
         }
       }
+
+      // Verify required columns
+      if (colMap.ticker == null) throw new Error('Không tìm thấy cột MÃ');
+      const missing = ['price'].filter(k => colMap[k] == null);
+      if (missing.length > 0) throw new Error(`Thiếu cột: ${missing.join(', ')}`);
+
+      console.log('FiinTrade column mapping:', colMap);
+
+      // Auto-detect snapshot date từ "Date Of Extract" (cột 0 hoặc bất kỳ)
+      for (let i = 0; i < headerIdx; i++) {
+        if (!arr[i]) continue;
+        for (let j = 0; j < arr[i].length; j++) {
+          if (String(arr[i][j] || '').trim() === 'Date Of Extract') {
+            const dt = arr[i][j + 1];
+            if (dt) {
+              let d;
+              if (dt instanceof Date) d = dt;
+              else if (typeof dt === 'number') d = new Date((dt - 25569) * 86400 * 1000);
+              else d = new Date(dt);
+              if (!isNaN(d.getTime())) {
+                document.getElementById('ft-date').value = d.toISOString().split('T')[0];
+              }
+            }
+            break;
+          }
+        }
+      }
+
+      // Helper: lấy giá trị theo tên field (an toàn nếu cột không tồn tại)
+      const getField = (row, field) => {
+        const idx = colMap[field];
+        return idx != null ? row[idx] : null;
+      };
 
       // Parse data rows
       const rows = [];
       for (let i = headerIdx + 1; i < arr.length; i++) {
         const r = arr[i];
-        if (!r || !r[0]) continue;
-        const ticker = String(r[0]).trim().toUpperCase();
-        // Filter: ticker hợp lệ là 3 chữ cái (Vietnamese stock convention)
-        // Cũng bỏ qua các ticker dài bất thường (footer/contact lines)
+        if (!r) continue;
+        const tickerVal = getField(r, 'ticker');
+        if (!tickerVal) continue;
+        const ticker = String(tickerVal).trim().toUpperCase();
         // Doanh nghiệp Vietnamese stock: ticker đúng 3 ký tự (chữ + số đều OK)
-        // VD: VCB, FPT, A32, D2D — tất cả là doanh nghiệp
         // Loại CW phái sinh (CFPT2401), ETF (E1VFVN30), fund (FUEVFVND) — đều > 3 ký tự
         if (!/^[A-Z0-9]{3}$/.test(ticker)) continue;
-        // Ticker thật phải có data số ở các cột tiếp theo (mcap, vol, price...)
-        // Footer junk sẽ không có data số → loại
-        const hasNumericData = parseFTNumber(r[2]) != null
-                            || parseFTNumber(r[3]) != null
-                            || parseFTNumber(r[4]) != null;
+        // Ticker thật phải có data số → loại footer junk
+        const hasNumericData = parseFTNumber(getField(r, 'market_cap')) != null
+                            || parseFTNumber(getField(r, 'volume'))     != null
+                            || parseFTNumber(getField(r, 'price'))      != null;
         if (!hasNumericData) continue;
 
-        const priceRaw = parseFTNumber(r[4]);
+        const priceRaw = parseFTNumber(getField(r, 'price'));
         const price    = priceRaw != null ? priceRaw / 1000 : null;   // nghìn VND
-        const pb       = parseFTNumber(r[5]);
-        const epsRaw   = parseFTNumber(r[6]);                          // VND gốc
+        const pb       = parseFTNumber(getField(r, 'pb'));
+        const epsRaw   = parseFTNumber(getField(r, 'eps'));            // VND gốc
         const eps      = epsRaw != null ? epsRaw / 1000 : null;        // nghìn VND
-        const pe       = parseFTNumber(r[7]);
-        const ps       = parseFTNumber(r[8]);
+        const pe       = parseFTNumber(getField(r, 'pe'));
+        const ps       = parseFTNumber(getField(r, 'ps'));
 
         // Derived per-share fields (đơn vị nghìn VND/cổ phiếu, đồng bộ price)
         // BVPS = price / pb     (cần pb > 0)
-        // RPS      = price / ps     (cần ps > 0)
-        // EPS đã có sẵn, chỉ chia 1000
+        // RPS  = price / ps     (cần ps > 0)
         const bvps = (price != null && pb && pb > 0) ? price / pb : null;
-        const rps          = (price != null && ps && ps > 0) ? price / ps : null;
+        const rps  = (price != null && ps && ps > 0) ? price / ps : null;
 
+        const sectorVal = getField(r, 'sector');
         rows.push({
           ticker,
-          sector:        r[1] ? String(r[1]).trim() : null,
-          market_cap:    parseFTNumber(r[2]),                           // VND gốc
-          volume:        parseFTNumber(r[3]),
-          price,                                                         // nghìn VND
+          sector:        sectorVal ? String(sectorVal).trim() : null,
+          market_cap:    parseFTNumber(getField(r, 'market_cap')),     // VND gốc
+          volume:        parseFTNumber(getField(r, 'volume')),
+          price,                                                        // nghìn VND
           pb,
-          eps,                                                           // nghìn VND/share
+          eps,                                                          // nghìn VND/share
           pe,
           ps,
-          bvps,                                                  // nghìn VND/share
-          rps,                                                           // nghìn VND/share
+          bvps,                                                         // nghìn VND/share
+          rps,                                                          // nghìn VND/share
         });
       }
 
