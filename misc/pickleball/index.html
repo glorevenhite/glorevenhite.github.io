@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pickleball Tournament Pro v4.1 - BVSC Style</title>
+    <title>Pickleball Tournament Pro v4.5 - BVSC Style</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * {
@@ -391,7 +391,7 @@
     <!-- HEADER -->
     <div class="header">
         <div class="header-content">
-            <div class="logo">🎾 PICKLEBALL TOURNAMENT PRO <span style="font-size: 0.6em; color: #ff6b35; background: yellow; padding: 2px 8px; border-radius: 4px;">v4.1 ⚡</span></div>
+            <div class="logo">🎾 PICKLEBALL TOURNAMENT PRO <span style="font-size: 0.6em; color: #ff6b35; background: yellow; padding: 2px 8px; border-radius: 4px;">v4.5 ⚡</span></div>
             <div class="header-info">
                 <div>11 người | 2 giờ | 1 sân</div>
             </div>
@@ -420,8 +420,27 @@
                 <textarea id="femaleNames" style="width: 100%; height: 80px; padding: 10px; border: 1px solid var(--border); border-radius: 4px; font-size: 13px; font-family: monospace;">CHÂU, NHƯ, NHUNG, THƠ, THƯ</textarea>
             </div>
 
-            <div style="display: flex; gap: 10px;">
+            <!-- TÙY CHỌN SẮP XẾP TRÌNH ĐỘ -->
+            <div style="margin-bottom: 20px; padding: 15px; background: white; border: 1px solid var(--border); border-radius: 4px;">
+                <label style="display: block; margin-bottom: 10px; font-weight: 600; color: var(--primary); font-size: 13px;">🔀 SẮP XẾP TRÌNH ĐỘ VĐV</label>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                        <input type="radio" name="sortMode" value="alphabetical" checked />
+                        <span><strong>Sắp xếp theo ABC</strong> - Tự động sắp xếp theo bảng chữ cái</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px;">
+                        <input type="radio" name="sortMode" value="manual" />
+                        <span><strong>Sắp xếp theo thứ tự nhập vào</strong> - Giữ nguyên thứ tự bạn nhập (mạnh → yếu)</span>
+                    </label>
+                </div>
+                <div style="margin-top: 10px; padding: 8px; background: #fff8e1; border-radius: 4px; font-size: 11px; color: #e65100;">
+                    💡 <strong>Lưu ý:</strong> Thứ tự này quyết định cách ghép cặp ở Vòng 1. Ví dụ: Nam[0]+Nữ[0] vs Nam[1]+Nữ[1], v.v.
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
                 <button class="btn btn-primary" onclick="app.loadPlayersList()">✓ Tải Danh Sách</button>
+                <button class="btn btn-secondary btn-small" onclick="app.shufflePlayers()" style="background: #9c27b0; color: white;">🔀 Xáo Trộn Ngẫu Nhiên</button>
                 <button class="btn btn-secondary btn-small" onclick="app.resetToDefault()">↻ Khôi Phục Mặc Định</button>
             </div>
 
@@ -441,14 +460,14 @@
 
                 <!-- BẢNG XẾP HẠNG TRƯỚC VÒNG 1 -->
                 <div style="background: #fff9e6; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin-bottom: 20px;">
-                    <div style="font-size: 13px; font-weight: 600; color: #f57f17; margin-bottom: 10px;">📊 TRƯỚC VÒNG 1 - Sắp xếp theo ABC</div>
+                    <div id="round1SortLabel" style="font-size: 13px; font-weight: 600; color: #f57f17; margin-bottom: 10px;">📊 TRƯỚC VÒNG 1 - Sắp xếp theo ABC</div>
                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 12px;">
                         <div>
-                            <strong style="color: var(--primary);">👨 Nam (A-Z)</strong><br/>
+                            <strong style="color: var(--primary);">👨 Danh sách VĐV Nam</strong><br/>
                             <span id="round1MaleList" style="line-height: 1.8;"></span>
                         </div>
                         <div>
-                            <strong style="color: var(--primary);">👩 Nữ (A-Z)</strong><br/>
+                            <strong style="color: var(--primary);">👩 Danh sách VĐV Nữ</strong><br/>
                             <span id="round1FemaleList" style="line-height: 1.8;"></span>
                         </div>
                     </div>
@@ -456,8 +475,8 @@
 
                 <div class="info-box">
                     <strong>📌 Cách Ghép Cặp:</strong><br/>
-                    👨 Nam (A-Z): AN, BẢO, ĐĂNG, ĐỈNH, KHÔI, VINH<br/>
-                    👩 Nữ (A-Z): CHÂU, NHƯ, NHUNG, THƠ, THƯ<br/>
+                    👨 Danh sách VĐV Nam: AN, BẢO, ĐĂNG, ĐỈNH, KHÔI, VINH<br/>
+                    👩 Danh sách VĐV Nữ: CHÂU, NHƯ, NHUNG, THƠ, THƯ<br/>
                     ⚡ VINH (Nam lẻ) → ghép với Nữ từ trận thắng đầu tiên
                 </div>
 
@@ -801,6 +820,7 @@
                 this.defaultFemales = ['CHÂU', 'NHƯ', 'NHUNG', 'THƠ', 'THƯ'];
                 this.males = [...this.defaultMales];
                 this.females = [...this.defaultFemales];
+                this.sortMode = 'alphabetical';  // 'alphabetical' hoặc 'manual'
                 this.initPlayers();
                 this.round1WinnerFemale = null;
             }
@@ -849,11 +869,72 @@
                     return;
                 }
 
+                // === XỬ LÝ TÙY CHỌN SẮP XẾP ===
+                const sortMode = document.querySelector('input[name="sortMode"]:checked')?.value || 'alphabetical';
+                this.sortMode = sortMode;
+                
+                if (sortMode === 'alphabetical') {
+                    // Sắp xếp ABC theo locale tiếng Việt
+                    this.males.sort((a, b) => a.localeCompare(b, 'vi'));
+                    this.females.sort((a, b) => a.localeCompare(b, 'vi'));
+                    console.log('🔤 Sắp xếp theo ABC');
+                } else {
+                    // Giữ nguyên thứ tự nhập vào (mạnh → yếu)
+                    console.log('📝 Giữ nguyên thứ tự nhập vào');
+                }
+
+                console.log(`👨 Nam (${this.males.length}):`, this.males);
+                console.log(`👩 Nữ (${this.females.length}):`, this.females);
+
                 this.initPlayers();
                 this.updatePlayersList();
                 document.getElementById('playersLoadedStatus').style.display = 'block';
-                document.getElementById('playerCount').textContent = `${this.males.length} nam + ${this.females.length} nữ`;
-                this.showStatus('✅ Danh sách đã được tải thành công!', 'success');
+                document.getElementById('playerCount').textContent = 
+                    `${this.males.length} nam + ${this.females.length} nữ (${sortMode === 'alphabetical' ? 'ABC' : 'theo thứ tự nhập'})`;
+                this.showStatus(`✅ Danh sách đã được tải thành công! (Sắp xếp: ${sortMode === 'alphabetical' ? 'ABC' : 'theo thứ tự nhập'})`, 'success');
+            }
+
+            // Xáo trộn danh sách VĐV ngẫu nhiên (Fisher-Yates shuffle)
+            shufflePlayers() {
+                // Lấy danh sách hiện tại từ textarea (chưa load)
+                const maleInput = document.getElementById('maleNames').value.trim();
+                const femaleInput = document.getElementById('femaleNames').value.trim();
+
+                if (!maleInput || !femaleInput) {
+                    this.showStatus('⚠️ Vui lòng nhập cả danh sách Nam và Nữ trước khi xáo trộn!', 'error');
+                    return;
+                }
+
+                let males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
+                let females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
+
+                if (males.length < 5 || females.length < 4) {
+                    this.showStatus('⚠️ Cần ít nhất 5 nam và 4 nữ!', 'error');
+                    return;
+                }
+
+                // Fisher-Yates shuffle algorithm
+                const shuffle = (arr) => {
+                    for (let i = arr.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [arr[i], arr[j]] = [arr[j], arr[i]];
+                    }
+                    return arr;
+                };
+
+                males = shuffle(males);
+                females = shuffle(females);
+
+                // Cập nhật lại textarea
+                document.getElementById('maleNames').value = males.join(', ');
+                document.getElementById('femaleNames').value = females.join(', ');
+
+                // Tự động chuyển sang chế độ "thứ tự nhập" để giữ nguyên thứ tự xáo trộn
+                const manualRadio = document.querySelector('input[name="sortMode"][value="manual"]');
+                if (manualRadio) manualRadio.checked = true;
+
+                this.showStatus(`🔀 Đã xáo trộn ngẫu nhiên! Đã tự động chuyển sang chế độ "Theo thứ tự nhập" để giữ thứ tự mới. Bấm <strong>"✓ Tải Danh Sách"</strong> để áp dụng.`, 'info');
+                console.log(`🔀 Xáo trộn:\n   Nam: ${males.join(', ')}\n   Nữ: ${females.join(', ')}`);
             }
 
             resetToDefault() {
@@ -861,14 +942,31 @@
                 this.females = [...this.defaultFemales];
                 document.getElementById('maleNames').value = this.defaultMales.join(', ');
                 document.getElementById('femaleNames').value = this.defaultFemales.join(', ');
+                
+                // Reset sort mode về ABC mặc định
+                this.sortMode = 'alphabetical';
+                const abcRadio = document.querySelector('input[name="sortMode"][value="alphabetical"]');
+                if (abcRadio) abcRadio.checked = true;
+                
+                // Áp dụng sắp xếp ABC cho danh sách mặc định
+                this.males.sort((a, b) => a.localeCompare(b, 'vi'));
+                this.females.sort((a, b) => a.localeCompare(b, 'vi'));
+                
                 this.initPlayers();
                 this.updatePlayersList();
                 document.getElementById('playersLoadedStatus').style.display = 'block';
-                document.getElementById('playerCount').textContent = `${this.males.length} nam + ${this.females.length} nữ`;
+                document.getElementById('playerCount').textContent = `${this.males.length} nam + ${this.females.length} nữ (ABC)`;
                 this.showStatus('↻ Khôi phục danh sách mặc định!', 'info');
             }
 
             updatePlayersList() {
+                // Cập nhật label sắp xếp trong bảng V1
+                const sortLabel = this.sortMode === 'manual' ? 'theo thứ tự Nhập' : 'theo ABC';
+                const sortLabelEl = document.getElementById('round1SortLabel');
+                if (sortLabelEl) {
+                    sortLabelEl.textContent = `📊 TRƯỚC VÒNG 1 - Sắp xếp ${sortLabel}`;
+                }
+
                 // Cập nhật danh sách Nam
                 const maleListHtml = this.males.map((name, idx) => {
                     const isMissing = idx === this.males.length - 1 ? ' 🔴' : '';
@@ -885,6 +983,20 @@
                 // Hiển thị danh sách Vòng 1
                 document.getElementById('round1MaleList').innerHTML = this.males.map((n, i) => `${i+1}. ${n}`).join('<br/>');
                 document.getElementById('round1FemaleList').innerHTML = this.females.map((n, i) => `${i+1}. ${n}`).join('<br/>');
+
+                // Cập nhật info-box "Cách Ghép Cặp" với danh sách thực tế
+                const infoBoxes = document.querySelectorAll('.info-box');
+                infoBoxes.forEach(box => {
+                    if (box.innerHTML.includes('Cách Ghép Cặp')) {
+                        const lastMale = this.males[this.males.length - 1];
+                        box.innerHTML = `
+                            <strong>📌 Cách Ghép Cặp (${sortLabel}):</strong><br/>
+                            👨 Nam: ${this.males.join(', ')}<br/>
+                            👩 Nữ: ${this.females.join(', ')}<br/>
+                            ⚡ ${lastMale} (Nam lẻ) → ghép với Nữ thắng Trận 1
+                        `;
+                    }
+                });
 
                 // Cập nhật Vòng 1 matches
                 this.updateRound1Matches();
@@ -1087,7 +1199,7 @@
 
                 // === DEBUG HIỂN THỊ ===
                 let debugHtml = '<div style="background: #fff9c4; border: 2px solid #ff6b35; padding: 15px; margin: 15px 0; border-radius: 8px; font-family: monospace; font-size: 12px;">';
-                debugHtml += '<div style="font-weight: bold; color: #ff6b35; margin-bottom: 10px; font-size: 14px;">🔍 DEBUG VÒNG 1 (v4.1)</div>';
+                debugHtml += '<div style="font-weight: bold; color: #ff6b35; margin-bottom: 10px; font-size: 14px;">🔍 DEBUG VÒNG 1 (v4.5)</div>';
                 matches.forEach((m, i) => {
                     debugHtml += `<div style="margin: 4px 0;">Trận ${i+1}: [<b>${m.teamA.join(' + ')}</b>] (${m.scoreA}) vs [<b>${m.teamB.join(' + ')}</b>] (${m.scoreB})`;
                     if (m.skipPlayer) debugHtml += ` <span style="color: red; font-weight: bold;">[Bỏ qua: ${m.skipPlayer}]</span>`;
@@ -1112,7 +1224,7 @@
                 debugContainer.innerHTML = debugHtml;
 
                 console.log('═══════════════════════════════════════════');
-                console.log('🔍 DEBUG VÒNG 1 v4.1');
+                console.log('🔍 DEBUG VÒNG 1 v4.5');
                 console.log('═══════════════════════════════════════════');
                 matches.forEach((m, i) => {
                     console.log(`Trận ${i+1}: [${m.teamA.join('+')}] (${m.scoreA}) vs [${m.teamB.join('+')}] (${m.scoreB})${m.skipPlayer ? ' → Bỏ qua: ' + m.skipPlayer : ''}`);
