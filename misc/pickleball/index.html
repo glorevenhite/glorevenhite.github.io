@@ -3,10 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v4.6.11 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v4.7 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Rufina:wght@400;700&family=Josefin+Slab:wght@300;400;500;600;700&family=Zilla+Slab:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
         * {
@@ -53,7 +53,7 @@
 
         /* Hermès-style typography for headings */
         h1, h2, h3, h4, h5, h6 {
-            font-family: 'Rufina', 'Josefin Slab', 'Memphis', 'Rockwell', 'Georgia', serif;
+            font-family: 'Bitter', 'Roboto Slab', 'Memphis', 'Rockwell', 'Georgia', serif;
             letter-spacing: 0.02em;
         }
 
@@ -81,7 +81,7 @@
         }
 
         .logo {
-            font-family: 'Rufina', 'Josefin Slab', 'Memphis', 'Rockwell', serif;
+            font-family: 'Bitter', 'Roboto Slab', 'Memphis', 'Rockwell', serif;
             font-size: 24px;
             font-weight: 700;
             letter-spacing: 0.15em;
@@ -112,7 +112,7 @@
         }
 
         .page-title {
-            font-family: 'Rufina', 'Josefin Slab', 'Memphis', 'Rockwell', serif;
+            font-family: 'Bitter', 'Roboto Slab', 'Memphis', 'Rockwell', serif;
             font-size: 42px;
             font-weight: 700;
             color: var(--primary);
@@ -588,7 +588,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v4.6.11 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v4.7 ⚡</span>
             </div>
         </div>
     </div>
@@ -1382,23 +1382,44 @@
                 // Cặp A (A1, A2) vs Cặp B (B1, B2) tỷ số scoreA - scoreB
                 //   → A1, A2: Thắng = scoreA, Thua = scoreB
                 //   → B1, B2: Thắng = scoreB, Thua = scoreA
+                //
+                // ĐẶC BIỆT: VĐV ghép cặp lần 2 (Nữ thắng T1 ghép T3 cùng VINH):
+                //   → Nhận điểm TRUNG BÌNH của 2 trận đã đấu
+                
+                // Map lưu lịch sử các trận của từng player để tính trung bình sau
+                const playerHistory = new Map();  // name -> [{wins, loss}, ...]
+                
                 matches.forEach((match) => {
                     match.teamA.forEach(playerName => {
-                        if (playerName === match.skipPlayer) return;
                         const player = this.players.find(p => p.name === playerName);
-                        if (player) {
-                            player.v1Wins = match.scoreA;
-                            player.v1Loss = match.scoreB;
-                        }
+                        if (!player) return;
+                        if (!playerHistory.has(playerName)) playerHistory.set(playerName, []);
+                        playerHistory.get(playerName).push({ wins: match.scoreA, loss: match.scoreB });
                     });
                     match.teamB.forEach(playerName => {
-                        if (playerName === match.skipPlayer) return;
                         const player = this.players.find(p => p.name === playerName);
-                        if (player) {
-                            player.v1Wins = match.scoreB;
-                            player.v1Loss = match.scoreA;
-                        }
+                        if (!player) return;
+                        if (!playerHistory.has(playerName)) playerHistory.set(playerName, []);
+                        playerHistory.get(playerName).push({ wins: match.scoreB, loss: match.scoreA });
                     });
+                });
+
+                // Áp dụng vào player: nếu đấu nhiều trận → tính TRUNG BÌNH
+                playerHistory.forEach((history, playerName) => {
+                    const player = this.players.find(p => p.name === playerName);
+                    if (!player) return;
+                    
+                    if (history.length === 1) {
+                        // Chỉ đấu 1 trận → dùng điểm trận đó
+                        player.v1Wins = history[0].wins;
+                        player.v1Loss = history[0].loss;
+                    } else {
+                        // Đấu 2+ trận → TRUNG BÌNH (thập phân)
+                        const totalWins = history.reduce((sum, h) => sum + h.wins, 0);
+                        const totalLoss = history.reduce((sum, h) => sum + h.loss, 0);
+                        player.v1Wins = totalWins / history.length;
+                        player.v1Loss = totalLoss / history.length;
+                    }
                 });
 
                 // === BƯỚC 6: TÍNH HIỆU SỐ ===
@@ -1406,34 +1427,8 @@
                     p.v1 = p.v1Wins - p.v1Loss;
                 });
 
-                // === DEBUG HIỂN THỊ ===
-                let debugHtml = '<div style="background: var(--bg-elevated); border: 1px solid var(--accent); padding: 15px; margin: 15px 0; border-radius: 8px; font-family: monospace; font-size: 12px;">';
-                debugHtml += '<div style="font-weight: bold; color: var(--primary); margin-bottom: 10px; font-size: 14px; letter-spacing: 0.05em;">🔍 DEBUG VÒNG 1 (v4.5)</div>';
-                matches.forEach((m, i) => {
-                    debugHtml += `<div style="margin: 4px 0;">Trận ${i+1}: [<b>${m.teamA.join(' + ')}</b>] (${m.scoreA}) vs [<b>${m.teamB.join(' + ')}</b>] (${m.scoreB})`;
-                    if (m.skipPlayer) debugHtml += ` <span style="color: red; font-weight: bold;">[Bỏ qua: ${m.skipPlayer}]</span>`;
-                    debugHtml += '</div>';
-                });
-                debugHtml += '<div style="margin-top: 10px; font-weight: bold; border-top: 1px solid #999; padding-top: 8px;">KẾT QUẢ:</div>';
-                this.players.forEach(p => {
-                    const color = p.v1 > 0 ? 'green' : p.v1 < 0 ? 'red' : 'gray';
-                    debugHtml += `<div style="margin: 2px 0;">${p.name}: <span style="color: green;">${p.v1Wins}W</span> / <span style="color: red;">${p.v1Loss}L</span> = <b style="color: ${color};">${p.v1 > 0 ? '+' : ''}${p.v1}</b></div>`;
-                });
-                debugHtml += '</div>';
-                
-                let debugContainer = document.getElementById('debugInfo');
-                if (!debugContainer) {
-                    debugContainer = document.createElement('div');
-                    debugContainer.id = 'debugInfo';
-                    const round2Box = document.getElementById('round2RankingBox');
-                    if (round2Box && round2Box.parentNode) {
-                        round2Box.parentNode.insertBefore(debugContainer, round2Box);
-                    }
-                }
-                debugContainer.innerHTML = debugHtml;
-
                 console.log('═══════════════════════════════════════════');
-                console.log('🔍 DEBUG VÒNG 1 v4.5');
+                console.log('🔍 KẾT QUẢ VÒNG 1');
                 console.log('═══════════════════════════════════════════');
                 matches.forEach((m, i) => {
                     console.log(`Trận ${i+1}: [${m.teamA.join('+')}] (${m.scoreA}) vs [${m.teamB.join('+')}] (${m.scoreB})${m.skipPlayer ? ' → Bỏ qua: ' + m.skipPlayer : ''}`);
@@ -1457,9 +1452,10 @@
 
                 document.getElementById('round2RankingBox').style.display = 'block';
                 const tableHtml = ranked.map((p, i) => {
-                    const thắng = p.v1Wins || 0;
-                    const thua = p.v1Loss || 0;
-                    const hiệuSố = p.v1 || 0;
+                    const thắng = (p.v1Wins || 0).toFixed(1);
+                    const thua = (p.v1Loss || 0).toFixed(1);
+                    const hiệuSố = (p.v1 || 0);
+                    const hiệuSốStr = (hiệuSố > 0 ? '+' : '') + hiệuSố.toFixed(1);
                     return `
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600;">A${i+1}</td>
@@ -1467,7 +1463,7 @@
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong);">${p.gender === 'Nam' ? '<span style="color: var(--info); font-weight: 600; font-size: 16px;">♂</span>' : '<span style="color: var(--danger); font-weight: 600; font-size: 16px;">♀</span>'}</td>
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--success);">${thắng}</td>
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--danger);">${thua}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${hiệuSố > 0 ? '+' : ''}${hiệuSố}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${hiệuSốStr}</td>
                     </tr>
                 `}).join('');
                 document.getElementById('round2RankingTable').innerHTML = tableHtml;
@@ -1646,22 +1642,39 @@
                     p.v2 = 0;
                 });
 
+                // Map lưu lịch sử các trận V2 của từng player
+                const playerV2History = new Map();
+                
                 matchData.forEach(match => {
                     const idx = match.idx - 1;
                     const m = matches[idx];
                     if (!m) return;
 
                     m.teamA.forEach(player => {
-                        if (m.skipPlayer && player.name === m.skipPlayer.name) return;
-                        player.v2Wins = match.s1;
-                        player.v2Loss = match.s2;
+                        if (!playerV2History.has(player.name)) playerV2History.set(player.name, []);
+                        playerV2History.get(player.name).push({ wins: match.s1, loss: match.s2 });
                     });
 
                     m.teamB.forEach(player => {
-                        if (m.skipPlayer && player.name === m.skipPlayer.name) return;
-                        player.v2Wins = match.s2;
-                        player.v2Loss = match.s1;
+                        if (!playerV2History.has(player.name)) playerV2History.set(player.name, []);
+                        playerV2History.get(player.name).push({ wins: match.s2, loss: match.s1 });
                     });
+                });
+
+                // Áp dụng vào player: nếu đấu nhiều trận → TRUNG BÌNH (thập phân)
+                playerV2History.forEach((history, playerName) => {
+                    const player = this.players.find(p => p.name === playerName);
+                    if (!player) return;
+                    
+                    if (history.length === 1) {
+                        player.v2Wins = history[0].wins;
+                        player.v2Loss = history[0].loss;
+                    } else {
+                        const totalWins = history.reduce((sum, h) => sum + h.wins, 0);
+                        const totalLoss = history.reduce((sum, h) => sum + h.loss, 0);
+                        player.v2Wins = totalWins / history.length;
+                        player.v2Loss = totalLoss / history.length;
+                    }
                 });
 
                 // Tính hiệu số V2
@@ -1673,7 +1686,9 @@
                 console.log('🔍 KẾT QUẢ VÒNG 2');
                 console.log('═══════════════════════════════════════');
                 this.players.forEach(p => {
-                    console.log(`  ${p.name.padEnd(8)}: V2 ${p.v2Wins}W / ${p.v2Loss}L = ${p.v2 > 0 ? '+' : ''}${p.v2}`);
+                    if (p.v2Wins > 0 || p.v2Loss > 0) {
+                        console.log(`  ${p.name.padEnd(8)}: V2 ${p.v2Wins.toFixed(1)}W / ${p.v2Loss.toFixed(1)}L = ${p.v2 > 0 ? '+' : ''}${p.v2.toFixed(1)}`);
+                    }
                 });
 
                 // Cập nhật hiển thị Trận 3 V2 với tên Nữ xuất sắc
@@ -1877,9 +1892,9 @@
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600;">B${i+1}</td>
                         <td style="padding: 8px; text-align: left; border: 1px solid var(--border-strong);">${p.name}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--success);">${thắng}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--danger);">${thua}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${hiệuSố}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--success);">${thắng.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--danger);">${thua.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${(hiệuSố > 0 ? '+' : '') + hiệuSố.toFixed(1)}</td>
                     </tr>
                 `}).join('');
                 document.getElementById('round3RankingTable').innerHTML = tableHtml;
@@ -1993,9 +2008,9 @@
                     <tr style="border-bottom: 1px solid var(--border);">
                         <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600;">${medal || i+1}</td>
                         <td style="padding: 8px; text-align: left; border: 1px solid var(--border-strong);">${p.name}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--success);">${thắng}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--danger);">${thua}</td>
-                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${hiệuSố}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--success);">${thắng.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 600; color: var(--danger);">${thua.toFixed(1)}</td>
+                        <td style="padding: 8px; text-align: center; border: 1px solid var(--border-strong); font-weight: 700; color: ${hiệuSố > 0 ? 'var(--success)' : hiệuSố < 0 ? 'var(--danger)' : '#666'}">${(hiệuSố > 0 ? '+' : '') + hiệuSố.toFixed(1)}</td>
                     </tr>
                 `}).join('');
                 document.getElementById('round4RankingTable').innerHTML = tableHtml;
