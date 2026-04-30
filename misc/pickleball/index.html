@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v4.7 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v5.0 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
@@ -588,7 +588,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v4.7 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.0 ⚡</span>
             </div>
         </div>
     </div>
@@ -1058,39 +1058,117 @@
                 this.males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 this.females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                if (this.males.length < 5 || this.females.length < 4) {
-                    this.showStatus('⚠️ Cần ít nhất 5 nam và 4 nữ!', 'error');
+                // === VALIDATION v5.0 ===
+                const validation = this.validatePlayers(this.males, this.females);
+                if (!validation.valid) {
+                    this.showStatus(`⚠️ ${validation.message}`, 'error');
                     return;
                 }
 
-                if (this.males.length + this.females.length !== 11) {
-                    this.showStatus(`⚠️ Tổng phải là 11 người! Hiện có: ${this.males.length + this.females.length}`, 'error');
-                    return;
-                }
+                this.tournamentConfig = validation;  // Lưu config (numMatches, numPairs, ...)
 
                 // === XỬ LÝ TÙY CHỌN SẮP XẾP ===
                 const sortMode = document.querySelector('input[name="sortMode"]:checked')?.value || 'alphabetical';
                 this.sortMode = sortMode;
                 
                 if (sortMode === 'alphabetical') {
-                    // Sắp xếp ABC theo locale tiếng Việt
                     this.males.sort((a, b) => a.localeCompare(b, 'vi'));
                     this.females.sort((a, b) => a.localeCompare(b, 'vi'));
                     console.log('🔤 Sắp xếp theo ABC');
                 } else {
-                    // Giữ nguyên thứ tự nhập vào (mạnh → yếu)
                     console.log('📝 Giữ nguyên thứ tự nhập vào');
                 }
 
                 console.log(`♂ Nam (${this.males.length}):`, this.males);
                 console.log(`♀ Nữ (${this.females.length}):`, this.females);
+                console.log(`🎾 Tổng: ${validation.N} VĐV | ${validation.numMatches} trận V1`);
 
                 this.initPlayers();
                 this.updatePlayersList();
                 document.getElementById('playersLoadedStatus').style.display = 'block';
                 document.getElementById('playerCount').textContent = 
-                    `${this.males.length} nam + ${this.females.length} nữ (${sortMode === 'alphabetical' ? 'ABC' : 'theo thứ tự nhập'})`;
-                this.showStatus(`✅ Danh sách đã được tải thành công! (Sắp xếp: ${sortMode === 'alphabetical' ? 'ABC' : 'theo thứ tự nhập'})`, 'success');
+                    `${this.males.length} nam + ${this.females.length} nữ = ${validation.N} VĐV (${validation.numMatches} trận, ${sortMode === 'alphabetical' ? 'ABC' : 'theo thứ tự nhập'})`;
+                this.showStatus(`✅ Đã tải danh sách ${validation.N} VĐV - ${validation.numMatches} trận đấu`, 'success');
+            }
+
+            // === VALIDATION CORE v5.0 ===
+            validatePlayers(males, females) {
+                const M = males.length;
+                const F = females.length;
+                const N = M + F;
+                
+                if (N < 8) {
+                    return { valid: false, message: `Cần ít nhất 8 VĐV (hiện có ${N}). Tăng số người để hỗ trợ V3 (Bán Kết)` };
+                }
+                
+                const numPairs = Math.max(M, F);
+                const numMatches = Math.ceil(numPairs / 2);
+                const minRequired = Math.ceil(numPairs / 2);
+                
+                if (Math.min(M, F) < minRequired) {
+                    const minGender = M < F ? 'Nam' : 'Nữ';
+                    const otherGender = minGender === 'Nam' ? 'Nữ' : 'Nam';
+                    const currentCount = Math.min(M, F);
+                    return { 
+                        valid: false, 
+                        message: `Tỷ lệ Nam-Nữ không hợp lệ: với ${Math.max(M, F)} ${otherGender}, cần ít nhất ${minRequired} ${minGender} (hiện có ${currentCount}). Quy tắc: mỗi người tối đa 2 trận.` 
+                    };
+                }
+                
+                return { valid: true, numPairs, numMatches, N, M, F };
+            }
+
+            // === GHÉP CẶP V1 (CORE LOGIC v5.0) ===
+            pairUpRound1(males, females) {
+                const validation = this.validatePlayers(males, females);
+                if (!validation.valid) return validation;
+                
+                const { numPairs, numMatches, M, F } = validation;
+                const pairs = [];
+                
+                // Pha 1: Cặp Nam-Nữ "thuần"
+                const k = Math.min(M, F);
+                for (let i = 0; i < k; i++) {
+                    pairs.push({
+                        male: males[i], female: females[i],
+                        type: 'normal',
+                        maleIsBorrowed: false, femaleIsBorrowed: false
+                    });
+                }
+                
+                // Pha 2: Người dư cùng giới → cần mượn người khác giới
+                if (M > F) {
+                    for (let i = k; i < M; i++) {
+                        pairs.push({ male: males[i], female: null, type: 'borrowFemale', maleIsBorrowed: false, femaleIsBorrowed: true });
+                    }
+                } else if (F > M) {
+                    for (let i = k; i < F; i++) {
+                        pairs.push({ male: null, female: females[i], type: 'borrowMale', maleIsBorrowed: true, femaleIsBorrowed: false });
+                    }
+                }
+                
+                // Pha 3: Số cặp lẻ → thêm cặp đặc biệt (mượn cả Nam lẫn Nữ)
+                while (pairs.length % 2 !== 0) {
+                    pairs.push({ male: null, female: null, type: 'borrowBoth', maleIsBorrowed: true, femaleIsBorrowed: true });
+                }
+                
+                // Sắp xếp & tạo trận
+                const normalPairs = pairs.filter(p => p.type === 'normal');
+                const borrowPairs = pairs.filter(p => p.type !== 'normal');
+                const sortedPairs = [...normalPairs, ...borrowPairs];
+                
+                const matches = [];
+                for (let i = 0; i < sortedPairs.length; i += 2) {
+                    const pairA = sortedPairs[i];
+                    const pairB = sortedPairs[i + 1];
+                    const hasBorrowing = pairA.type !== 'normal' || (pairB && pairB.type !== 'normal');
+                    matches.push({ index: matches.length + 1, pairA, pairB, hasBorrowing });
+                }
+                
+                return {
+                    valid: true, numMatches: matches.length, matches, pairs,
+                    stats: { normalPairs: normalPairs.length, borrowPairs: borrowPairs.length }
+                };
             }
 
             // Xáo trộn danh sách VĐV ngẫu nhiên (Fisher-Yates shuffle)
@@ -1107,8 +1185,8 @@
                 let males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 let females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                if (males.length < 5 || females.length < 4) {
-                    this.showStatus('⚠️ Cần ít nhất 5 nam và 4 nữ!', 'error');
+                if (males.length + females.length < 8) {
+                    this.showStatus('⚠️ Cần ít nhất 8 VĐV để xáo trộn!', 'error');
                     return;
                 }
 
@@ -1202,174 +1280,232 @@
             }
 
             updateRound1Matches() {
-                // Render TOÀN BỘ container - không còn duplicate ID
-                const t1_p1 = `${this.males[0]} + ${this.females[0]}`;
-                const t1_p2 = `${this.males[1]} + ${this.females[1]}`;
-                const t2_p1 = `${this.males[2]} + ${this.females[2]}`;
-                const t2_p2 = `${this.males[3]} + ${this.females[3]}`;
-                const t3_p1 = `${this.males[4]} + ${this.females[4]}`;
-                const t3_p2 = `${this.males[this.males.length-1]} + ?`;
-
                 const container = document.getElementById('round1MatchesContainer');
                 if (!container) {
                     console.error('❌ Không tìm thấy #round1MatchesContainer');
                     return;
                 }
 
-                container.innerHTML = `
-                    <div class="match-group" id="r1_match_1">
-                        <div class="match-title">Trận 1: (${t1_p1}) vs (${t1_p2})</div>
-                        <div class="match-row">
-                            <div class="player-name">${t1_p1}</div>
-                            <div class="vs-text">:</div>
-                            <div class="player-name">${t1_p2}</div>
-                        </div>
-                        <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t1_s1" value="7" min="0" max="7" />
-                            <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t1_s2" value="0" min="0" max="11" />
-                        </div>
-                    </div>
+                // === SỬ DỤNG LOGIC v5.0 ===
+                const result = this.pairUpRound1(this.males, this.females);
+                if (!result.valid) {
+                    container.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">❌ ${result.message}</div>`;
+                    return;
+                }
 
-                    <div class="match-group" id="r1_match_2">
-                        <div class="match-title">Trận 2: (${t2_p1}) vs (${t2_p2})</div>
-                        <div class="match-row">
-                            <div class="player-name">${t2_p1}</div>
-                            <div class="vs-text">:</div>
-                            <div class="player-name">${t2_p2}</div>
-                        </div>
-                        <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t2_s1" value="7" min="0" max="7" />
-                            <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t2_s2" value="0" min="0" max="11" />
-                        </div>
-                    </div>
+                // Lưu cấu trúc matches để dùng sau
+                this.r1Matches = result.matches;
+                this.r1Pairs = result.pairs;
 
-                    <!-- Nút xác nhận T1+T2 V1 để xác định người ghép cặp Trận 3 -->
-                    <div style="text-align: center; margin: 15px 0; padding: 12px; background: var(--bg-elevated); border: 1px dashed var(--accent); border-radius: 4px;">
-                        <div style="font-size: 12px; color: var(--accent-dark); margin-bottom: 8px;">
-                            💡 Sau khi nhập điểm Trận 1, bấm nút bên dưới để xác định <strong>Nữ ghép cặp với ${this.males[this.males.length-1]} ở Trận 3</strong>
+                // Render từng trận
+                let html = '';
+                result.matches.forEach((match, idx) => {
+                    const matchNum = match.index;
+                    const pairAStr = this.formatPair(match.pairA);
+                    const pairBStr = match.pairB ? this.formatPair(match.pairB) : '?';
+                    
+                    html += `
+                        <div class="match-group" id="r1_match_${matchNum}">
+                            <div class="match-title" id="r1_t${matchNum}_title">Trận ${matchNum}: (${pairAStr}) vs (${pairBStr})</div>
+                            <div class="match-row">
+                                <div class="player-name" id="r1_t${matchNum}_p1">${pairAStr}</div>
+                                <div class="vs-text">:</div>
+                                <div class="player-name" id="r1_t${matchNum}_p2">${pairBStr}</div>
+                            </div>
+                            <div class="match-row">
+                                <input type="number" class="score-input" id="r1_t${matchNum}_s1" value="7" min="0" max="7" />
+                                <div class="vs-text">vs</div>
+                                <input type="number" class="score-input" id="r1_t${matchNum}_s2" value="0" min="0" max="7" />
+                            </div>
                         </div>
-                        <button class="btn btn-primary btn-small" onclick="app.confirmRound1Trans3()" style="background: var(--accent); color: var(--primary);">
-                            ✓ Xác Nhận & Ghép Cặp Trận 3
-                        </button>
-                    </div>
-
-                    <div class="match-group" id="r1_match_3">
-                        <div class="match-title" id="r1_t3_title">Trận 3: (${t3_p1}) vs (${t3_p2})</div>
-                        <div class="match-row">
-                            <div class="player-name">${t3_p1}</div>
-                            <div class="vs-text">:</div>
-                            <div class="player-name" id="r1_t3_p2">${t3_p2}</div>
-                        </div>
-                        <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t3_s1" value="7" min="0" max="7" />
-                            <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t3_s2" value="0" min="0" max="11" />
-                        </div>
-                    </div>
-                `;
-
-                console.log('✅ Đã cập nhật matches container');
-                // Verify không có duplicate
-                ['r1_t1_s1', 'r1_t1_s2', 'r1_t2_s1', 'r1_t2_s2', 'r1_t3_s1', 'r1_t3_s2'].forEach(id => {
-                    const count = document.querySelectorAll(`#${id}`).length;
-                    if (count !== 1) console.warn(`⚠️ ID="${id}" có ${count} phần tử (cần 1)`);
+                    `;
                 });
+
+                // Thêm nút "Xác Nhận & Ghép Cặp" trước các trận có người mượn (nếu có)
+                const firstBorrowMatchIdx = result.matches.findIndex(m => m.hasBorrowing);
+                if (firstBorrowMatchIdx > 0) {
+                    // Có ít nhất 1 trận normal trước trận borrow → đặt nút trước trận borrow đầu tiên
+                    const insertBeforeMatchNum = result.matches[firstBorrowMatchIdx].index;
+                    const numNormalMatches = firstBorrowMatchIdx;
+                    const numBorrowMatches = result.matches.length - firstBorrowMatchIdx;
+                    
+                    const buttonHtml = `
+                        <div style="text-align: center; margin: 15px 0; padding: 12px; background: var(--bg-elevated); border: 1px dashed var(--accent); border-radius: 4px;">
+                            <div style="font-size: 12px; color: var(--accent-dark); margin-bottom: 8px;">
+                                💡 Sau khi nhập điểm <strong>${numNormalMatches} trận đầu</strong>, bấm nút bên dưới để xác định người ghép cặp cho <strong>${numBorrowMatches} trận sau</strong>
+                            </div>
+                            <button class="btn btn-primary btn-small" onclick="app.confirmRound1Trans3()" style="background: var(--accent); color: var(--primary);">
+                                ✓ Xác Nhận & Ghép Cặp
+                            </button>
+                        </div>
+                    `;
+                    
+                    // Insert button before borrow matches
+                    const beforeMatch = `<div class="match-group" id="r1_match_${insertBeforeMatchNum}">`;
+                    html = html.replace(beforeMatch, buttonHtml + beforeMatch);
+                }
+
+                container.innerHTML = html;
+                console.log(`✅ Đã render ${result.matches.length} trận V1`);
+            }
+
+            // Helper: format pair thành string hiển thị
+            formatPair(pair) {
+                if (!pair) return '?';
+                const male = pair.male || (pair.maleIsBorrowed ? '?(Nam mượn)' : '?');
+                const female = pair.female || (pair.femaleIsBorrowed ? '?(Nữ mượn)' : '?');
+                return `${male} + ${female}`;
             }
 
             saveRound1() {
-                const s1_t1 = parseInt(document.getElementById('r1_t1_s1').value || '0');
-                const s2_t1 = parseInt(document.getElementById('r1_t1_s2').value || '0');
-                const s1_t2 = parseInt(document.getElementById('r1_t2_s1').value || '0');
-                const s2_t2 = parseInt(document.getElementById('r1_t2_s2').value || '0');
-                const s1_t3 = parseInt(document.getElementById('r1_t3_s1').value || '0');
-                const s2_t3 = parseInt(document.getElementById('r1_t3_s2').value || '0');
-
-                if ((s1_t1 || s2_t1) && (s1_t2 || s2_t2) && (s1_t3 || s2_t3)) {
-                    // CHỈ gọi createRound2 - không có logic tính điểm trùng lặp
-                    this.createRound2();
-                    this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
-                } else {
-                    this.showStatus('⚠️ Vui lòng nhập đủ điểm 3 trận!', 'error');
+                if (!this.r1Matches || this.r1Matches.length === 0) {
+                    this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
+                    return;
                 }
+
+                // Đọc tỷ số tất cả trận
+                const allScores = [];
+                let allEntered = true;
+                for (const match of this.r1Matches) {
+                    const s1 = parseInt(document.getElementById(`r1_t${match.index}_s1`).value || '0');
+                    const s2 = parseInt(document.getElementById(`r1_t${match.index}_s2`).value || '0');
+                    if (s1 === 0 && s2 === 0) allEntered = false;
+                    allScores.push({ matchIdx: match.index, s1, s2 });
+                }
+
+                if (!allEntered) {
+                    this.showStatus(`⚠️ Vui lòng nhập đủ điểm ${this.r1Matches.length} trận!`, 'error');
+                    return;
+                }
+
+                this.r1Scores = allScores;
+                this.createRound2();
+                this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
             }
 
-            // Xác nhận T1 V1 → ghép Nữ thắng T1 vào Trận 3 (cùng VINH)
+            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.0 generic)
             confirmRound1Trans3() {
-                const s1_t1 = parseInt(document.getElementById('r1_t1_s1').value || '0');
-                const s2_t1 = parseInt(document.getElementById('r1_t1_s2').value || '0');
-
-                if (s1_t1 === 0 && s2_t1 === 0) {
-                    this.showStatus('⚠️ Vui lòng nhập điểm Trận 1 trước!', 'error');
+                if (!this.r1Matches || this.r1Matches.length === 0) {
+                    this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
                     return;
                 }
 
-                if (s1_t1 === s2_t1) {
-                    this.showStatus('⚠️ Trận 1 không thể hòa! Pickleball luôn có 1 đội thắng', 'error');
+                // Tìm các trận normal (chưa có người mượn) để đọc tỷ số
+                const normalMatches = this.r1Matches.filter(m => !m.hasBorrowing);
+                const borrowMatches = this.r1Matches.filter(m => m.hasBorrowing);
+
+                if (borrowMatches.length === 0) {
+                    this.showStatus('ℹ️ Không có trận nào cần ghép cặp đặc biệt', 'info');
                     return;
                 }
 
-                // Xác định Nữ thắng T1
-                // Trận 1: (males[0] + females[0]) vs (males[1] + females[1])
-                const winnerFemale = (s1_t1 > s2_t1) ? this.females[0] : this.females[1];
-                const lastMale = this.males[this.males.length - 1];  // VINH
+                // Đọc tỷ số các trận normal
+                const normalScores = [];
+                for (const m of normalMatches) {
+                    const s1 = parseInt(document.getElementById(`r1_t${m.index}_s1`).value || '0');
+                    const s2 = parseInt(document.getElementById(`r1_t${m.index}_s2`).value || '0');
+                    if (s1 === 0 && s2 === 0) {
+                        this.showStatus(`⚠️ Vui lòng nhập điểm Trận ${m.index} trước!`, 'error');
+                        return;
+                    }
+                    if (s1 === s2) {
+                        this.showStatus(`⚠️ Trận ${m.index} không thể hòa!`, 'error');
+                        return;
+                    }
+                    normalScores.push({ match: m, s1, s2 });
+                }
 
-                // Cập nhật hiển thị Trận 3
-                document.getElementById('r1_t3_p2').textContent = `${lastMale} + ${winnerFemale}`;
-                document.getElementById('r1_t3_title').textContent = 
-                    `Trận 3: (${this.males[4]} + ${this.females[4]}) vs (${lastMale} + ${winnerFemale})`;
+                // Tính tạm thời điểm cho từng người dựa trên các trận normal
+                const tempScores = new Map();  // name -> { wins, loss, diff }
+                for (const ns of normalScores) {
+                    const m = ns.match;
+                    // Cặp A
+                    [m.pairA.male, m.pairA.female].filter(x => x).forEach(name => {
+                        if (!tempScores.has(name)) tempScores.set(name, { wins: 0, loss: 0 });
+                        tempScores.get(name).wins += ns.s1;
+                        tempScores.get(name).loss += ns.s2;
+                    });
+                    // Cặp B
+                    if (m.pairB) {
+                        [m.pairB.male, m.pairB.female].filter(x => x).forEach(name => {
+                            if (!tempScores.has(name)) tempScores.set(name, { wins: 0, loss: 0 });
+                            tempScores.get(name).wins += ns.s2;
+                            tempScores.get(name).loss += ns.s1;
+                        });
+                    }
+                }
 
-                this.showStatus(`✅ Đã xác định: Nữ thắng T1 là <strong>${winnerFemale}</strong>, sẽ ghép cặp với <strong>${lastMale}</strong>`, 'success');
-                console.log(`🎯 Trận 3 V1: ${this.males[4]}+${this.females[4]} vs ${lastMale}+${winnerFemale}`);
+                // Phân loại Nam/Nữ + tính hiệu số
+                const allMales = [];
+                const allFemales = [];
+                tempScores.forEach((v, name) => {
+                    const isFemale = this.females.includes(name);
+                    const item = { name, wins: v.wins, loss: v.loss, diff: v.wins - v.loss };
+                    if (isFemale) allFemales.push(item);
+                    else allMales.push(item);
+                });
+
+                // Sắp xếp Nữ theo hiệu số giảm (xuất sắc nhất trước)
+                allFemales.sort((a, b) => b.diff - a.diff);
+                // Sắp xếp Nam theo hiệu số tăng (thua nhất trước)
+                allMales.sort((a, b) => a.diff - b.diff);
+
+                // Gán người mượn vào borrowMatches
+                let femaleIdx = 0;
+                let maleIdx = 0;
+                
+                for (const m of borrowMatches) {
+                    // Cặp A có cần mượn?
+                    if (m.pairA.maleIsBorrowed && !m.pairA.male) {
+                        m.pairA.male = allMales[maleIdx++]?.name || '?';
+                    }
+                    if (m.pairA.femaleIsBorrowed && !m.pairA.female) {
+                        m.pairA.female = allFemales[femaleIdx++]?.name || '?';
+                    }
+                    // Cặp B có cần mượn?
+                    if (m.pairB) {
+                        if (m.pairB.maleIsBorrowed && !m.pairB.male) {
+                            m.pairB.male = allMales[maleIdx++]?.name || '?';
+                        }
+                        if (m.pairB.femaleIsBorrowed && !m.pairB.female) {
+                            m.pairB.female = allFemales[femaleIdx++]?.name || '?';
+                        }
+                    }
+
+                    // Cập nhật UI
+                    const pairAStr = this.formatPair(m.pairA);
+                    const pairBStr = m.pairB ? this.formatPair(m.pairB) : '?';
+                    document.getElementById(`r1_t${m.index}_p1`).textContent = pairAStr;
+                    document.getElementById(`r1_t${m.index}_p2`).textContent = pairBStr;
+                    document.getElementById(`r1_t${m.index}_title`).textContent = 
+                        `Trận ${m.index}: (${pairAStr}) vs (${pairBStr})`;
+                }
+
+                this.showStatus(`✅ Đã ghép cặp ${borrowMatches.length} trận sau dựa trên kết quả ${normalMatches.length} trận đầu`, 'success');
+                console.log('🎯 Đã xác định mượn:', { allFemales, allMales, borrowMatches });
             }
 
             createRound2() {
-                // === BƯỚC 1: ĐỌC TỶ SỐ ===
-                const getScore = (id) => {
-                    const el = document.getElementById(id);
-                    if (!el) {
-                        console.error(`❌ Không tìm thấy input #${id}`);
-                        return 0;
-                    }
-                    const val = el.value;
-                    console.log(`🔍 #${id} = "${val}"`);
-                    return parseInt(val || '0');
-                };
+                // === BƯỚC 1: ĐỌC TỶ SỐ TỪ TẤT CẢ TRẬN V1 ===
+                if (!this.r1Matches || this.r1Matches.length === 0) {
+                    this.showStatus('⚠️ Chưa có cấu hình V1!', 'error');
+                    return;
+                }
 
-                const s1_t1 = getScore('r1_t1_s1');
-                const s2_t1 = getScore('r1_t1_s2');
-                const s1_t2 = getScore('r1_t2_s1');
-                const s2_t2 = getScore('r1_t2_s2');
-                const s1_t3 = getScore('r1_t3_s1');
-                const s2_t3 = getScore('r1_t3_s2');
+                // === BƯỚC 2: ĐỊNH NGHĨA CÁC TRẬN ĐẤU TỪ this.r1Matches ===
+                const matches = this.r1Matches.map(m => {
+                    const s1 = parseInt(document.getElementById(`r1_t${m.index}_s1`).value || '0');
+                    const s2 = parseInt(document.getElementById(`r1_t${m.index}_s2`).value || '0');
+                    const teamA = [m.pairA.male, m.pairA.female].filter(x => x);
+                    const teamB = m.pairB ? [m.pairB.male, m.pairB.female].filter(x => x) : [];
+                    return {
+                        teamA, teamB,
+                        scoreA: s1, scoreB: s2,
+                        index: m.index
+                    };
+                });
 
-                console.log(`📊 TỶ SỐ: T1=${s1_t1}-${s2_t1}, T2=${s1_t2}-${s2_t2}, T3=${s1_t3}-${s2_t3}`);
-
-                // === BƯỚC 2: XÁC ĐỊNH NỮ THẮNG TRẬN 1 ===
-                this.round1WinnerFemale = (s1_t1 > s2_t1) ? this.females[0] : this.females[1];
-
-                // === BƯỚC 3: ĐỊNH NGHĨA CÁC TRẬN ĐẤU ===
-                const matches = [
-                    {
-                        teamA: [this.males[0], this.females[0]],
-                        teamB: [this.males[1], this.females[1]],
-                        scoreA: s1_t1, scoreB: s2_t1,
-                        skipPlayer: null
-                    },
-                    {
-                        teamA: [this.males[2], this.females[2]],
-                        teamB: [this.males[3], this.females[3]],
-                        scoreA: s1_t2, scoreB: s2_t2,
-                        skipPlayer: null
-                    },
-                    {
-                        teamA: [this.males[4], this.females[4]],
-                        teamB: [this.males[this.males.length-1], this.round1WinnerFemale],
-                        scoreA: s1_t3, scoreB: s2_t3,
-                        skipPlayer: this.round1WinnerFemale
-                    }
-                ];
+                console.log('📊 V1 Matches:', matches);
 
                 // === BƯỚC 4: RESET ĐIỂM VÒNG 1 ===
                 this.players.forEach(p => {
