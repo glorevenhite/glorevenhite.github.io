@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v5.1 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v5.2 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
@@ -722,7 +722,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.1 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.2 ⚡</span>
             </div>
             
             <!-- Device Mode Selector -->
@@ -1162,7 +1162,7 @@
                 this.males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 this.females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                // === VALIDATION v5.1 ===
+                // === VALIDATION v5.2 ===
                 const validation = this.validatePlayers(this.males, this.females);
                 if (!validation.valid) {
                     this.showStatus(`⚠️ ${validation.message}`, 'error');
@@ -1195,7 +1195,7 @@
                 this.showStatus(`✅ Đã tải danh sách ${validation.N} VĐV - ${validation.numMatches} trận đấu`, 'success');
             }
 
-            // === VALIDATION CORE v5.1 ===
+            // === VALIDATION CORE v5.2 ===
             validatePlayers(males, females) {
                 const M = males.length;
                 const F = females.length;
@@ -1230,7 +1230,7 @@
                 return { valid: true, numPairs, numMatches, N, M, F };
             }
 
-            // === GHÉP CẶP V1 (CORE LOGIC v5.1) ===
+            // === GHÉP CẶP V1 (CORE LOGIC v5.2) ===
             pairUpRound1(males, females) {
                 const validation = this.validatePlayers(males, females);
                 if (!validation.valid) return validation;
@@ -1398,7 +1398,7 @@
                     return;
                 }
 
-                // === SỬ DỤNG LOGIC v5.1 ===
+                // === SỬ DỤNG LOGIC v5.2 ===
                 const result = this.pairUpRound1(this.males, this.females);
                 if (!result.valid) {
                     container.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">❌ ${result.message}</div>`;
@@ -1495,7 +1495,7 @@
                 this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
             }
 
-            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.1 generic)
+            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.2 generic)
             confirmRound1Trans3() {
                 if (!this.r1Matches || this.r1Matches.length === 0) {
                     this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
@@ -1716,7 +1716,7 @@
                 `}).join('');
                 document.getElementById('round2RankingTable').innerHTML = tableHtml;
 
-                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.1) ===
+                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.2) ===
                 // Logic: A1+AN vs A2+A(N-1), A3+A(N-2) vs A4+A(N-3), ...
                 // Số trận = ceil(N/4), số cặp = N/2 (nếu N chẵn) hoặc (N+1)/2 (nếu N lẻ)
                 // Người lẻ giữa bảng → ghép với Nữ xuất sắc nhất
@@ -1725,37 +1725,76 @@
 
             // === GHÉP CẶP V2 - HỖ TRỢ N ĐỘNG ===
             createRound2Pairs(ranked) {
-                const N = ranked.length;
-                const numMatches = Math.ceil(N / 4);
+                // === LOGIC MỚI v5.2: Mạnh Nam + Yếu Nữ (giống V3) ===
+                // Sắp xếp Nam và Nữ riêng theo hiệu số V1
+                const sortFn = (a, b) => {
+                    if (b.v1 !== a.v1) return b.v1 - a.v1;
+                    if (b.v1Wins !== a.v1Wins) return b.v1Wins - a.v1Wins;
+                    return a.v1Loss - b.v1Loss;
+                };
                 
-                // Tạo cặp mạnh+yếu: A1+AN, A2+A(N-1), ..., A(k)+A(N+1-k)
+                const males = ranked.filter(p => p.gender === 'Nam').sort(sortFn);
+                const females = ranked.filter(p => p.gender === 'Nữ').sort(sortFn);
+                const M = males.length;
+                const F = females.length;
+                
+                console.log('🎾 V2 Mạnh Nam + Yếu Nữ:');
+                console.log('  Nam:', males.map((p, i) => `M${i+1}=${p.name}(${p.v1>0?'+':''}${p.v1})`).join(', '));
+                console.log('  Nữ:', females.map((p, i) => `F${i+1}=${p.name}(${p.v1>0?'+':''}${p.v1})`).join(', '));
+                
                 const pairs = [];
-                let i = 0;
-                let j = N - 1;
-                while (i < j) {
-                    pairs.push({ p1: ranked[i], p2: ranked[j], type: 'normal' });
-                    i++;
-                    j--;
-                }
-                // Nếu N lẻ → có 1 người ở giữa (i === j)
-                if (i === j) {
-                    pairs.push({ p1: ranked[i], p2: null, type: 'borrow' });
+                
+                // Pha 1: Cặp Nam-Nữ "thuần" (Mạnh Nam + Yếu Nữ)
+                const k = Math.min(M, F);
+                for (let i = 0; i < k; i++) {
+                    pairs.push({
+                        p1: males[i],          // Mi (mạnh nhất)
+                        p2: females[k - 1 - i], // F(k-i) (yếu nhất trong top k)
+                        type: 'normal'
+                    });
                 }
                 
-                // Lưu lại để dùng sau
+                // Pha 2: Người dư cùng giới → cần mượn người khác giới
+                if (M > F) {
+                    // Thừa Nam (như N=11: M=6, F=5)
+                    for (let i = k; i < M; i++) {
+                        pairs.push({
+                            p1: males[i],
+                            p2: null,
+                            type: 'borrowFemale'
+                        });
+                    }
+                } else if (F > M) {
+                    // Thừa Nữ
+                    for (let i = k; i < F; i++) {
+                        pairs.push({
+                            p1: null,
+                            p2: females[i],
+                            type: 'borrowMale'
+                        });
+                    }
+                }
+                
+                // Pha 3: Số cặp lẻ → thêm cặp đặc biệt (mượn cả 2)
+                while (pairs.length % 2 !== 0) {
+                    pairs.push({ p1: null, p2: null, type: 'borrowBoth' });
+                }
+                
+                // Lưu lại
                 this.round2Pairs = pairs;
                 this.round2Ranked = ranked;
                 
-                // Sắp xếp pairs vào matches (2 cặp/trận, normal trước, borrow sau)
+                // Sắp xếp: cặp normal trước, cặp borrow sau
                 const normalPairs = pairs.filter(p => p.type === 'normal');
-                const borrowPairs = pairs.filter(p => p.type === 'borrow');
+                const borrowPairs = pairs.filter(p => p.type !== 'normal');
                 const sortedPairs = [...normalPairs, ...borrowPairs];
                 
+                // Tạo matches (2 cặp/trận)
                 const matches = [];
-                for (let k = 0; k < sortedPairs.length; k += 2) {
-                    const pairA = sortedPairs[k];
-                    const pairB = sortedPairs[k + 1];
-                    const hasBorrowing = pairA.type === 'borrow' || (pairB && pairB.type === 'borrow');
+                for (let k2 = 0; k2 < sortedPairs.length; k2 += 2) {
+                    const pairA = sortedPairs[k2];
+                    const pairB = sortedPairs[k2 + 1];
+                    const hasBorrowing = pairA.type !== 'normal' || (pairB && pairB.type !== 'normal');
                     matches.push({ index: matches.length + 1, pairA, pairB, hasBorrowing });
                 }
                 
@@ -1815,14 +1854,24 @@
                 document.getElementById('round2Empty').classList.add('hidden');
                 document.getElementById('round2Content').classList.remove('hidden');
                 
-                console.log(`✅ V2: Render ${matches.length} trận cho ${N} VĐV`);
+                console.log(`✅ V2: Render ${matches.length} trận cho ${ranked.length} VĐV (${M} Nam + ${F} Nữ)`);
             }
 
             // Helper: format cặp V2 thành string
             formatRound2Pair(pair) {
                 if (!pair) return '?';
-                const p1Name = pair.p1?.name || '?';
-                const p2Name = pair.p2?.name || '?(mượn)';
+                let p1Name = pair.p1?.name;
+                let p2Name = pair.p2?.name;
+                
+                // Placeholder cho người mượn (chưa được fill)
+                if (!p1Name) {
+                    if (pair.type === 'borrowMale' || pair.type === 'borrowBoth') p1Name = '?(Nam mượn)';
+                    else p1Name = '?';
+                }
+                if (!p2Name) {
+                    if (pair.type === 'borrowFemale' || pair.type === 'borrowBoth') p2Name = '?(Nữ mượn)';
+                    else p2Name = '?';
+                }
                 return `${p1Name} + ${p2Name}`;
             }
 
@@ -2012,20 +2061,35 @@
                 let borrowedNames = [];
 
                 for (const m of borrowMatches) {
-                    // pairA.p2 = null → cần mượn (giả định mượn Nữ trước, Nam sau)
-                    // Nếu pairA.p1 là Nam → mượn Nữ; Nếu là Nữ → mượn Nam
                     const fillPair = (pair) => {
                         if (!pair) return;
-                        if (pair.type === 'borrow' && !pair.p2) {
-                            // Người p1 cần partner
-                            if (pair.p1.gender === 'Nam' && femaleIdx < femaleStats.length) {
+                        // borrowFemale: pair.p1 là Nam, cần mượn Nữ làm p2
+                        if (pair.type === 'borrowFemale' && !pair.p2) {
+                            if (femaleIdx < femaleStats.length) {
                                 pair.p2 = femaleStats[femaleIdx].player;
-                                borrowedNames.push(pair.p2.name);
+                                borrowedNames.push(`${pair.p2.name}(Nữ)`);
                                 femaleIdx++;
-                            } else if (pair.p1.gender === 'Nữ' && maleIdx < maleStats.length) {
-                                pair.p2 = maleStats[maleIdx].player;
-                                borrowedNames.push(pair.p2.name);
+                            }
+                        }
+                        // borrowMale: pair.p2 là Nữ, cần mượn Nam làm p1
+                        else if (pair.type === 'borrowMale' && !pair.p1) {
+                            if (maleIdx < maleStats.length) {
+                                pair.p1 = maleStats[maleIdx].player;
+                                borrowedNames.push(`${pair.p1.name}(Nam)`);
                                 maleIdx++;
+                            }
+                        }
+                        // borrowBoth: cần mượn cả Nam lẫn Nữ
+                        else if (pair.type === 'borrowBoth') {
+                            if (!pair.p1 && maleIdx < maleStats.length) {
+                                pair.p1 = maleStats[maleIdx].player;
+                                borrowedNames.push(`${pair.p1.name}(Nam)`);
+                                maleIdx++;
+                            }
+                            if (!pair.p2 && femaleIdx < femaleStats.length) {
+                                pair.p2 = femaleStats[femaleIdx].player;
+                                borrowedNames.push(`${pair.p2.name}(Nữ)`);
+                                femaleIdx++;
                             }
                         }
                     };
@@ -2124,7 +2188,7 @@
             }
 
             displayRound3Rankings() {
-                // === LOGIC MỚI v5.1: 4 Nam + 4 Nữ tốt nhất ===
+                // === LOGIC MỚI v5.2: 4 Nam + 4 Nữ tốt nhất ===
                 // Sắp xếp theo: Hiệu số (V1+V2) > Thắng > Thua thấp
                 const sortFn = (a, b) => {
                     const totalA = a.v1 + a.v2;
@@ -2455,7 +2519,7 @@
 
         window.addEventListener('load', () => {
             loadDeviceMode();
-            app.showStatus('✅ Ứng dụng v5.1 sẵn sàng! Hỗ trợ N≥8 VĐV', 'info');
+            app.showStatus('✅ Ứng dụng v5.2 sẵn sàng! Hỗ trợ N≥8 VĐV', 'info');
         });
     </script>
 </body>
