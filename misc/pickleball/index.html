@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v5.20 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v5.21 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
@@ -1091,7 +1091,7 @@
             }
         }
         
-        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.20) ═══ */
+        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.21) ═══ */
         /* Cover cả @media và force-mobile */
         @media (max-width: 767px) {
             body:not(.force-desktop):not(.force-tablet) .player-row-header {
@@ -1296,7 +1296,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.20 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.21 ⚡</span>
             </div>
             
             <!-- Device Mode Selector -->
@@ -2094,7 +2094,7 @@
                 this.males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 this.females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                // === VALIDATION v5.20 ===
+                // === VALIDATION v5.21 ===
                 const validation = this.validatePlayers(this.males, this.females);
                 if (!validation.valid) {
                     this.showStatus(`⚠️ ${validation.message}`, 'error');
@@ -2127,7 +2127,7 @@
                 this.showStatus(`✅ Đã tải danh sách ${validation.N} VĐV - ${validation.numMatches} trận đấu`, 'success');
             }
 
-            // === VALIDATION CORE v5.20 ===
+            // === VALIDATION CORE v5.21 ===
             validatePlayers(males, females) {
                 const M = males.length;
                 const F = females.length;
@@ -2162,7 +2162,7 @@
                 return { valid: true, numPairs, numMatches, N, M, F };
             }
 
-            // === GHÉP CẶP V1 (CORE LOGIC v5.20) ===
+            // === GHÉP CẶP V1 (CORE LOGIC v5.21) ===
             pairUpRound1(males, females) {
                 const validation = this.validatePlayers(males, females);
                 if (!validation.valid) return validation;
@@ -2330,7 +2330,7 @@
                     return;
                 }
 
-                // === SỬ DỤNG LOGIC v5.20 ===
+                // === SỬ DỤNG LOGIC v5.21 ===
                 const result = this.pairUpRound1(this.males, this.females);
                 if (!result.valid) {
                     container.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">❌ ${result.message}</div>`;
@@ -2435,7 +2435,7 @@
                 this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
             }
 
-            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.20 generic)
+            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.21 generic)
             confirmRound1Trans3() {
                 if (!this.r1Matches || this.r1Matches.length === 0) {
                     this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
@@ -2656,7 +2656,7 @@
                 `}).join('');
                 document.getElementById('round2RankingTable').innerHTML = tableHtml;
 
-                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.20) ===
+                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.21) ===
                 // Logic: A1+AN vs A2+A(N-1), A3+A(N-2) vs A4+A(N-3), ...
                 // Số trận = ceil(N/4), số cặp = N/2 (nếu N chẵn) hoặc (N+1)/2 (nếu N lẻ)
                 // Người lẻ giữa bảng → ghép với Nữ xuất sắc nhất
@@ -2665,7 +2665,7 @@
 
             // === GHÉP CẶP V2 - HỖ TRỢ N ĐỘNG ===
             createRound2Pairs(ranked) {
-                // === LOGIC MỚI v5.20: Mạnh Nam + Yếu Nữ (giống V3) ===
+                // === LOGIC MỚI v5.21: Mạnh Nam + Yếu Nữ (giống V3) ===
                 // Sắp xếp Nam và Nữ riêng theo hiệu số V1
                 const sortFn = (a, b) => {
                     if (b.v1 !== a.v1) return b.v1 - a.v1;
@@ -3136,7 +3136,7 @@
             }
 
             displayRound3Rankings() {
-                // === LOGIC MỚI v5.20: 4 Nam + 4 Nữ tốt nhất ===
+                // === LOGIC MỚI v5.21: 4 Nam + 4 Nữ tốt nhất ===
                 // Sắp xếp theo: Hiệu số (V1+V2) > Thắng > Thua thấp
                 const sortFn = (a, b) => {
                     const totalA = a.v1 + a.v2;
@@ -3438,7 +3438,7 @@
             }
 
             // ═══════════════════════════════════════════════════════════
-            // === SCREENSHOT HELPER (v5.20) - html2canvas ===
+            // === SCREENSHOT HELPER (v5.21) - html2canvas ===
             // ═══════════════════════════════════════════════════════════
             
             // Render nút chụp ảnh có thể tái sử dụng
@@ -3451,6 +3451,98 @@
                         ${label}
                     </button>
                 `;
+            }
+            
+            // ═══════════════════════════════════════════════════════════
+            // === SCORE SIMULATION (v5.21) ===
+            // Giả lập tỷ số ngẫu nhiên có trọng số theo rating
+            // Thang điểm 11 (thắng cách 2), có thể extend lên 12-10 nếu tie 10-10
+            // ═══════════════════════════════════════════════════════════
+            
+            // Sinh 1 tỷ số ngẫu nhiên [scoreA, scoreB] cho 2 cặp
+            generateRandomScore(pairA, pairB) {
+                // Tổng rating của mỗi cặp (nếu có)
+                const ratingA = ((pairA?.p1?.rating) || 3.0) + ((pairA?.p2?.rating) || 3.0);
+                const ratingB = ((pairB?.p1?.rating) || 3.0) + ((pairB?.p2?.rating) || 3.0);
+                const totalRating = ratingA + ratingB;
+                
+                // Xác suất A thắng dựa trên rating, clamp 25-75% để tránh 100% dự đoán
+                let probA = totalRating > 0 ? ratingA / totalRating : 0.5;
+                probA = Math.max(0.25, Math.min(0.75, probA));
+                
+                const aWins = Math.random() < probA;
+                
+                // 10% khả năng extend lên 12-10 (giả lập tie 10-10 phải thắng cách 2)
+                const isExtended = Math.random() < 0.1;
+                const winnerScore = isExtended ? 12 : 11;
+                const loserScore = isExtended ? 10 : Math.floor(Math.random() * 10); // 0-9
+                
+                return aWins ? [winnerScore, loserScore] : [loserScore, winnerScore];
+            }
+            
+            // Điền tỷ số vào 2 input của 1 trận (dùng stepper API để có visual feedback)
+            simulateMatchScore(inputIdA, inputIdB, pairA, pairB) {
+                if (!pairB) return false; // BYE - skip
+                const [sa, sb] = this.generateRandomScore(pairA, pairB);
+                const elA = document.getElementById(inputIdA);
+                const elB = document.getElementById(inputIdB);
+                if (!elA || !elB || elA.disabled || elB.disabled) return false;
+                elA.value = sa;
+                elB.value = sb;
+                // Trigger visual feedback
+                [elA, elB].forEach(el => {
+                    el.style.background = '#fffcf0';
+                    setTimeout(() => { el.style.background = ''; }, 300);
+                });
+                return true;
+            }
+            
+            // Giả lập TẤT CẢ tỷ số cho Lượt N
+            simulateRoundScores(roundNum) {
+                const s = this.swissState;
+                if (!s) return;
+                const round = s.rounds[roundNum - 1];
+                if (!round || round.completed) {
+                    this.showStatus('⚠️ Lượt này đã hoàn thành, không thể giả lập!', 'error');
+                    return;
+                }
+                
+                let count = 0;
+                round.matches.forEach(m => {
+                    const ok = this.simulateMatchScore(
+                        `swiss_r${roundNum}_m${m.index}_sa`,
+                        `swiss_r${roundNum}_m${m.index}_sb`,
+                        m.pairA, m.pairB
+                    );
+                    if (ok) count++;
+                });
+                
+                this.showStatus(`🎲 Đã giả lập ${count} tỷ số cho Lượt ${roundNum} (bạn có thể chỉnh sửa trước khi Lưu)`, 'success');
+            }
+            
+            // Giả lập Bán Kết
+            simulateSemifinalScores() {
+                const s = this.swissState;
+                if (!s || !s.semifinals) return;
+                let count = 0;
+                s.semifinals.forEach(bk => {
+                    const ok = this.simulateMatchScore(
+                        `swiss_bk${bk.idx}_sa`, `swiss_bk${bk.idx}_sb`,
+                        bk.pairA, bk.pairB
+                    );
+                    if (ok) count++;
+                });
+                this.showStatus(`🎲 Đã giả lập ${count} tỷ số Bán Kết`, 'success');
+            }
+            
+            // Giả lập Chung Kết + Tranh Giải 3
+            simulateFinalScores() {
+                const s = this.swissState;
+                if (!s || !s.finalMatch) return;
+                let count = 0;
+                if (this.simulateMatchScore('swiss_3rd_sa', 'swiss_3rd_sb', s.thirdPlaceMatch.pairA, s.thirdPlaceMatch.pairB)) count++;
+                if (this.simulateMatchScore('swiss_final_sa', 'swiss_final_sb', s.finalMatch.pairA, s.finalMatch.pairB)) count++;
+                this.showStatus(`🎲 Đã giả lập ${count} tỷ số Chung Kết + Tranh Giải 3`, 'success');
             }
             
             // Capture 1 element và download PNG
@@ -3571,7 +3663,7 @@
             }
 
             // ═══════════════════════════════════════════════════════════
-            // === SCORE STEPPER HELPER (v5.20) ===
+            // === SCORE STEPPER HELPER (v5.21) ===
             // Nút +/- cho input điểm - user-friendly cho mobile
             // ═══════════════════════════════════════════════════════════
             
@@ -5110,7 +5202,8 @@
                         <div class="controls" style="margin-top: 20px; align-items: center;">
                             ${roundData.completed 
                                 ? '<div style="color: var(--success); font-weight: 600;">✓ Lượt này đã hoàn thành</div>'
-                                : `<button class="btn btn-primary" onclick="app.saveSwissRound(${roundNum})">✓ Lưu Lượt ${roundNum} ${roundNum < s.numRounds ? '& Tạo Lượt ' + (roundNum + 1) : '& Vào Playoff'}</button>`
+                                : `<button class="btn btn-primary" onclick="app.saveSwissRound(${roundNum})">✓ Lưu Lượt ${roundNum} ${roundNum < s.numRounds ? '& Tạo Lượt ' + (roundNum + 1) : '& Vào Playoff'}</button>
+                                   <button class="btn btn-secondary btn-small" onclick="app.simulateRoundScores(${roundNum})" style="background: #7d5a9f; color: white; font-size: 12px;" title="Điền tỷ số ngẫu nhiên theo rating">🎲 Giả lập Tỷ số</button>`
                             }
                             ${this.renderScreenshotButton(`#swissRound_${roundNum}`, `Luot_${roundNum}`)}
                         </div>
@@ -5464,6 +5557,7 @@
                 html += `
                         <div class="controls" style="margin-top: 20px; align-items: center;">
                             <button class="btn btn-primary" onclick="app.saveSwissSemifinals()">✓ Lưu Bán Kết & Tạo Chung Kết</button>
+                            <button class="btn btn-secondary btn-small" onclick="app.simulateSemifinalScores()" style="background: #7d5a9f; color: white; font-size: 12px;" title="Điền tỷ số ngẫu nhiên theo rating">🎲 Giả lập Tỷ số</button>
                             ${this.renderScreenshotButton('#swissPlayoffArea > .panel', 'BanKet')}
                         </div>
                     </div>
@@ -5550,8 +5644,9 @@
                             <div class="pair-name pair-name-b">${s.finalMatch.pairB.p1.name} + ${s.finalMatch.pairB.p2.name}</div>
                         </div>
                         
-                        <div class="controls" style="margin-top: 20px;">
+                        <div class="controls" style="margin-top: 20px; align-items: center;">
                             <button class="btn btn-primary" onclick="app.saveSwissFinals()">🏆 Lưu & Hiển Thị Kết Quả Cuối</button>
+                            <button class="btn btn-secondary btn-small" onclick="app.simulateFinalScores()" style="background: #7d5a9f; color: white; font-size: 12px;" title="Điền tỷ số ngẫu nhiên theo rating">🎲 Giả lập Tỷ số</button>
                         </div>
                     </div>
                     
@@ -5785,7 +5880,7 @@
             // Khởi tạo player rows tab Swiss Tournament
             app.renderSwissPlayerRows('male', app.getDefaultMaleData());
             app.renderSwissPlayerRows('female', app.getDefaultFemaleData());
-            app.showStatus('✅ Ứng dụng v5.20 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
+            app.showStatus('✅ Ứng dụng v5.21 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
         });
     </script>
 </body>
