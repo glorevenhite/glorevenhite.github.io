@@ -3,12 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v5.15 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v5.17 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -1060,7 +1061,37 @@
             font-weight: 600;
         }
         
-        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.15) ═══ */
+        /* Interim Ranking Panel */
+        .interim-ranking-panel summary {
+            list-style: none;
+            outline: none;
+        }
+        .interim-ranking-panel summary::-webkit-details-marker {
+            display: none;
+        }
+        .interim-ranking-panel details[open] summary span:last-child::before {
+            content: '▲';
+        }
+        .interim-ranking-panel details:not([open]) summary span:last-child::before {
+            content: '▼';
+        }
+        .interim-ranking-panel details[open] summary span:last-child {
+            font-size: 11px;
+        }
+        /* Bàng scroll ngang trên mobile */
+        .interim-ranking-panel table {
+            display: block;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        @media (min-width: 768px) {
+            .interim-ranking-panel table {
+                display: table;
+                white-space: normal;
+            }
+        }
+        
+        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.17) ═══ */
         /* Cover cả @media và force-mobile */
         @media (max-width: 767px) {
             body:not(.force-desktop):not(.force-tablet) .player-row-header {
@@ -1265,7 +1296,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.15 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.17 ⚡</span>
             </div>
             
             <!-- Device Mode Selector -->
@@ -2063,7 +2094,7 @@
                 this.males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 this.females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                // === VALIDATION v5.15 ===
+                // === VALIDATION v5.17 ===
                 const validation = this.validatePlayers(this.males, this.females);
                 if (!validation.valid) {
                     this.showStatus(`⚠️ ${validation.message}`, 'error');
@@ -2096,7 +2127,7 @@
                 this.showStatus(`✅ Đã tải danh sách ${validation.N} VĐV - ${validation.numMatches} trận đấu`, 'success');
             }
 
-            // === VALIDATION CORE v5.15 ===
+            // === VALIDATION CORE v5.17 ===
             validatePlayers(males, females) {
                 const M = males.length;
                 const F = females.length;
@@ -2131,7 +2162,7 @@
                 return { valid: true, numPairs, numMatches, N, M, F };
             }
 
-            // === GHÉP CẶP V1 (CORE LOGIC v5.15) ===
+            // === GHÉP CẶP V1 (CORE LOGIC v5.17) ===
             pairUpRound1(males, females) {
                 const validation = this.validatePlayers(males, females);
                 if (!validation.valid) return validation;
@@ -2299,7 +2330,7 @@
                     return;
                 }
 
-                // === SỬ DỤNG LOGIC v5.15 ===
+                // === SỬ DỤNG LOGIC v5.17 ===
                 const result = this.pairUpRound1(this.males, this.females);
                 if (!result.valid) {
                     container.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">❌ ${result.message}</div>`;
@@ -2404,7 +2435,7 @@
                 this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
             }
 
-            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.15 generic)
+            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.17 generic)
             confirmRound1Trans3() {
                 if (!this.r1Matches || this.r1Matches.length === 0) {
                     this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
@@ -2625,7 +2656,7 @@
                 `}).join('');
                 document.getElementById('round2RankingTable').innerHTML = tableHtml;
 
-                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.15) ===
+                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.17) ===
                 // Logic: A1+AN vs A2+A(N-1), A3+A(N-2) vs A4+A(N-3), ...
                 // Số trận = ceil(N/4), số cặp = N/2 (nếu N chẵn) hoặc (N+1)/2 (nếu N lẻ)
                 // Người lẻ giữa bảng → ghép với Nữ xuất sắc nhất
@@ -2634,7 +2665,7 @@
 
             // === GHÉP CẶP V2 - HỖ TRỢ N ĐỘNG ===
             createRound2Pairs(ranked) {
-                // === LOGIC MỚI v5.15: Mạnh Nam + Yếu Nữ (giống V3) ===
+                // === LOGIC MỚI v5.17: Mạnh Nam + Yếu Nữ (giống V3) ===
                 // Sắp xếp Nam và Nữ riêng theo hiệu số V1
                 const sortFn = (a, b) => {
                     if (b.v1 !== a.v1) return b.v1 - a.v1;
@@ -3105,7 +3136,7 @@
             }
 
             displayRound3Rankings() {
-                // === LOGIC MỚI v5.15: 4 Nam + 4 Nữ tốt nhất ===
+                // === LOGIC MỚI v5.17: 4 Nam + 4 Nữ tốt nhất ===
                 // Sắp xếp theo: Hiệu số (V1+V2) > Thắng > Thua thấp
                 const sortFn = (a, b) => {
                     const totalA = a.v1 + a.v2;
@@ -3407,7 +3438,80 @@
             }
 
             // ═══════════════════════════════════════════════════════════
-            // === SCORE STEPPER HELPER (v5.15) ===
+            // === SCREENSHOT HELPER (v5.17) - html2canvas ===
+            // ═══════════════════════════════════════════════════════════
+            
+            // Render nút chụp ảnh có thể tái sử dụng
+            renderScreenshotButton(targetSelector, filename, label = '📸 Chụp Ảnh') {
+                return `
+                    <button class="btn btn-secondary btn-small screenshot-btn"
+                            onclick="app.captureElement('${targetSelector}', '${filename}')"
+                            style="font-size: 12px; padding: 8px 14px; background: var(--primary); color: white; border: none;"
+                            title="Chụp ảnh và tải xuống PNG">
+                        ${label}
+                    </button>
+                `;
+            }
+            
+            // Capture 1 element và download PNG
+            captureElement(selector, filename = 'pickleball') {
+                if (typeof html2canvas === 'undefined') {
+                    this.showStatus('⚠️ Thư viện chụp ảnh chưa sẵn sàng, hãy thử lại!', 'error');
+                    return;
+                }
+                
+                const el = document.querySelector(selector);
+                if (!el) {
+                    this.showStatus(`⚠️ Không tìm thấy khu vực cần chụp!`, 'error');
+                    return;
+                }
+                
+                this.showStatus('📸 Đang chụp ảnh...', 'info');
+                
+                // Ẩn các nút screenshot trước khi chụp
+                const btns = el.querySelectorAll('.screenshot-btn');
+                btns.forEach(b => b.style.visibility = 'hidden');
+                
+                // Configure html2canvas cho chất lượng cao
+                const options = {
+                    backgroundColor: '#ffffff',
+                    scale: 2,  // High DPI - ảnh sắc nét trên retina/mobile
+                    logging: false,
+                    useCORS: true,
+                    allowTaint: true,
+                    // Ignore các element không cần
+                    ignoreElements: (el) => {
+                        return el.classList && el.classList.contains('screenshot-btn');
+                    }
+                };
+                
+                html2canvas(el, options).then(canvas => {
+                    // Restore visibility
+                    btns.forEach(b => b.style.visibility = '');
+                    
+                    // Convert to PNG blob và trigger download
+                    canvas.toBlob(blob => {
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        const timestamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+                        a.href = url;
+                        a.download = `${filename}_${timestamp}.png`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        setTimeout(() => URL.revokeObjectURL(url), 1000);
+                        
+                        this.showStatus(`✅ Đã lưu ảnh: ${filename}_${timestamp}.png`, 'success');
+                    }, 'image/png');
+                }).catch(err => {
+                    btns.forEach(b => b.style.visibility = '');
+                    console.error('Screenshot error:', err);
+                    this.showStatus('⚠️ Lỗi khi chụp ảnh: ' + (err.message || 'Không xác định'), 'error');
+                });
+            }
+
+            // ═══════════════════════════════════════════════════════════
+            // === SCORE STEPPER HELPER (v5.17) ===
             // Nút +/- cho input điểm - user-friendly cho mobile
             // ═══════════════════════════════════════════════════════════
             
@@ -4835,8 +4939,14 @@
                 const matches = roundData.matches;
                 const numCourts = s.numCourts;
                 
+                // Nếu là lượt 2 trở đi → chèn bảng xếp hạng tạm thời sau lượt trước
+                let html = '';
+                if (roundNum > 1) {
+                    html += this.renderInterimRankingPanel(roundNum - 1);
+                }
+                
                 // Phân bổ vào mini-rounds (số sân quyết định)
-                let html = `
+                html += `
                     <div class="panel" id="swissRound_${roundNum}" style="margin-bottom: 24px;">
                         <div class="panel-title">📋 Vòng Bảng - Lượt ${roundNum} / ${s.numRounds}</div>
                         <div style="margin-bottom: 16px; font-size: 12px; color: var(--text-light);">
@@ -4896,11 +5006,12 @@
                 });
                 
                 html += `
-                        <div class="controls" style="margin-top: 20px;">
+                        <div class="controls" style="margin-top: 20px; align-items: center;">
                             ${roundData.completed 
                                 ? '<div style="color: var(--success); font-weight: 600;">✓ Lượt này đã hoàn thành</div>'
                                 : `<button class="btn btn-primary" onclick="app.saveSwissRound(${roundNum})">✓ Lưu Lượt ${roundNum} ${roundNum < s.numRounds ? '& Tạo Lượt ' + (roundNum + 1) : '& Vào Playoff'}</button>`
                             }
+                            ${this.renderScreenshotButton(`#swissRound_${roundNum}`, `Luot_${roundNum}`)}
                         </div>
                     </div>
                 `;
@@ -4908,9 +5019,14 @@
                 const area = document.getElementById('swissRoundsArea');
                 area.insertAdjacentHTML('beforeend', html);
                 
-                // Scroll vào view
+                // Scroll vào view - ưu tiên bảng xếp hạng tạm (nếu có) để user thấy trước
                 setTimeout(() => {
-                    document.getElementById(`swissRound_${roundNum}`).scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    const scrollTarget = roundNum > 1 
+                        ? document.getElementById(`interimRanking_${roundNum - 1}`) 
+                        : document.getElementById(`swissRound_${roundNum}`);
+                    if (scrollTarget) {
+                        scrollTarget.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
                 }, 100);
             }
             
@@ -5065,7 +5181,8 @@
                 this.renderSwissPlayoff(top4M, top4F);
             }
             
-            renderSwissRanking() {
+            // Helper: Build ranking table HTML (reusable cho cả interim và final)
+            buildRankingTableHTML() {
                 const s = this.swissState;
                 const sortFn = (a, b) => {
                     if (b.matchesWon !== a.matchesWon) return b.matchesWon - a.matchesWon;
@@ -5077,20 +5194,18 @@
                 const allSorted = [...s.players].sort(sortFn);
                 
                 let html = `
-                    <div class="panel" style="margin-bottom: 24px;">
-                        <div class="panel-title">📊 Bảng Xếp Hạng Sau Vòng Bảng</div>
-                        <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 12px;">
-                            <thead>
-                                <tr style="background: var(--primary); color: white;">
-                                    <th style="padding: 8px; border: 1px solid #1976d2;">Hạng</th>
-                                    <th style="padding: 8px; border: 1px solid #1976d2; text-align: left;">Tên</th>
-                                    <th style="padding: 8px; border: 1px solid #1976d2;">Giới</th>
-                                    <th style="padding: 8px; border: 1px solid #1976d2;">Trận Thắng</th>
-                                    <th style="padding: 8px; border: 1px solid #1976d2;">Tổng Điểm</th>
-                                    <th style="padding: 8px; border: 1px solid #1976d2;">Hiệu Số</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                    <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-top: 12px;">
+                        <thead>
+                            <tr style="background: var(--primary); color: white;">
+                                <th style="padding: 8px; border: 1px solid #1976d2;">Hạng</th>
+                                <th style="padding: 8px; border: 1px solid #1976d2; text-align: left;">Tên</th>
+                                <th style="padding: 8px; border: 1px solid #1976d2;">Giới</th>
+                                <th style="padding: 8px; border: 1px solid #1976d2;">Trận Thắng</th>
+                                <th style="padding: 8px; border: 1px solid #1976d2;">Tổng Điểm</th>
+                                <th style="padding: 8px; border: 1px solid #1976d2;">Hiệu Số</th>
+                            </tr>
+                        </thead>
+                        <tbody>
                 `;
                 
                 allSorted.forEach((p, i) => {
@@ -5116,10 +5231,52 @@
                 });
                 
                 html += `
-                            </tbody>
-                        </table>
-                        <div style="margin-top: 10px; font-size: 11px; color: var(--text-light);">
-                            Sắp xếp: Số trận thắng → Hiệu số → Tổng điểm thắng → USAPA Rating
+                        </tbody>
+                    </table>
+                    <div style="margin-top: 10px; font-size: 11px; color: var(--text-light);">
+                        Sắp xếp: Số trận thắng → Hiệu số → Tổng điểm thắng → USAPA Rating
+                    </div>
+                `;
+                
+                return html;
+            }
+            
+            // Render bảng xếp hạng tạm thời (giữa các lượt, collapsible)
+            renderInterimRankingPanel(afterRoundNum) {
+                const panelId = `interimRanking_${afterRoundNum}`;
+                const tableHtml = this.buildRankingTableHTML();
+                
+                return `
+                    <div class="panel interim-ranking-panel" id="${panelId}" style="margin-bottom: 16px; border-left: 4px solid var(--accent); background: linear-gradient(135deg, rgba(245,184,0,0.03) 0%, rgba(0,51,102,0.02) 100%);">
+                        <details open>
+                            <summary style="cursor: pointer; user-select: none; padding: 6px 0; list-style: none; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
+                                <span style="font-family: 'Bitter', serif; font-size: 15px; font-weight: 700; color: var(--primary); letter-spacing: 0.05em;">
+                                    📊 Xếp Hạng Tạm Thời Sau Lượt ${afterRoundNum}
+                                </span>
+                                <span style="font-size: 11px; color: var(--text-light);">▼ Bấm để ẩn/hiện</span>
+                            </summary>
+                            <div style="margin-top: 8px;">
+                                ${tableHtml}
+                                <div style="margin-top: 12px; text-align: right;">
+                                    ${this.renderScreenshotButton(`#${panelId}`, `XepHang_SauLuot_${afterRoundNum}`, '📸 Chụp Ảnh')}
+                                </div>
+                            </div>
+                        </details>
+                    </div>
+                `;
+            }
+            
+            renderSwissRanking() {
+                const s = this.swissState;
+                const tableHtml = this.buildRankingTableHTML();
+                
+                let html = `
+                    <div class="panel" style="margin-bottom: 24px;">
+                        <div class="panel-title">📊 Bảng Xếp Hạng Sau Vòng Bảng</div>
+                        ${tableHtml}
+                        
+                        <div style="margin-top: 12px; text-align: right;">
+                            ${this.renderScreenshotButton('#swissRankingArea .panel', 'BangXepHang')}
                         </div>
                     </div>
                 `;
@@ -5167,8 +5324,9 @@
                 });
                 
                 html += `
-                        <div class="controls" style="margin-top: 20px;">
+                        <div class="controls" style="margin-top: 20px; align-items: center;">
                             <button class="btn btn-primary" onclick="app.saveSwissSemifinals()">✓ Lưu Bán Kết & Tạo Chung Kết</button>
+                            ${this.renderScreenshotButton('#swissPlayoffArea > .panel', 'BanKet')}
                         </div>
                     </div>
                     
@@ -5337,6 +5495,10 @@
                         <div style="margin-top: 20px; text-align: center; font-size: 11px; color: var(--text-light);">
                             🎾 Giải đấu hoàn thành · ${s.numRounds} lượt vòng bảng · ${s.N} VĐV
                         </div>
+                        
+                        <div style="margin-top: 16px; text-align: center;">
+                            ${this.renderScreenshotButton('#swissResultArea .panel', 'KetQua_GiaiDau', '📸 Chụp Ảnh Kết Quả')}
+                        </div>
                     </div>
                 `;
                 
@@ -5410,6 +5572,17 @@
                 document.getElementById('scheduleRoundsList').innerHTML = roundsHtml;
                 
                 document.getElementById('scheduleResults').style.display = 'block';
+                
+                // Thêm nút chụp ảnh vào cuối scheduleResults (nếu chưa có)
+                const resultsDiv = document.getElementById('scheduleResults');
+                let existingBtn = resultsDiv.querySelector('.schedule-screenshot-container');
+                if (!existingBtn) {
+                    existingBtn = document.createElement('div');
+                    existingBtn.className = 'schedule-screenshot-container';
+                    existingBtn.style.cssText = 'margin-top: 16px; text-align: center; padding: 12px;';
+                    existingBtn.innerHTML = this.renderScreenshotButton('#scheduleResults', 'LichThiDau', '📸 Chụp Ảnh Lịch Thi Đấu');
+                    resultsDiv.appendChild(existingBtn);
+                }
             }
         }
 
@@ -5474,7 +5647,7 @@
             // Khởi tạo player rows tab Swiss Tournament
             app.renderSwissPlayerRows('male', app.getDefaultMaleData());
             app.renderSwissPlayerRows('female', app.getDefaultFemaleData());
-            app.showStatus('✅ Ứng dụng v5.15 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
+            app.showStatus('✅ Ứng dụng v5.17 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
         });
     </script>
 </body>
