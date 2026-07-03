@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>11NCT Pickleball Tournament Pro v5.12 - BVSC Style</title>
+    <title>11NCT Pickleball Tournament Pro v5.13 - BVSC Style</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bitter:wght@400;500;600;700;800&family=Roboto+Slab:wght@400;500;600;700;800&family=Zilla+Slab:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap&subset=vietnamese" rel="stylesheet">
@@ -341,6 +341,11 @@
             gap: 10px;
             align-items: center;
             margin-bottom: 8px;
+            justify-items: center;
+        }
+        /* Match row có stepper - căn giữa các stepper */
+        .match-row .score-stepper {
+            justify-self: center;
         }
 
         .player-name {
@@ -371,6 +376,14 @@
             color: var(--text);
             background: var(--bg-elevated);
             transition: all 0.2s ease;
+            /* Ẩn native stepper của trình duyệt */
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+        .score-input::-webkit-outer-spin-button,
+        .score-input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
 
         .score-input:focus {
@@ -379,6 +392,78 @@
             box-shadow: 0 0 0 3px rgba(245, 184, 0, 0.15);
             background: #fffdf8;
         }
+        
+        /* ═══ SCORE STEPPER (nút +/- nhập điểm) ═══ */
+        .score-stepper {
+            display: inline-flex;
+            align-items: stretch;
+            gap: 0;
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 51, 102, 0.08);
+            background: white;
+            border: 1px solid var(--border-strong);
+        }
+        .score-stepper .score-input {
+            width: 60px;
+            padding: 8px 4px;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
+            background: white;
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+        }
+        .score-stepper .score-input:focus {
+            box-shadow: inset 0 0 0 2px var(--accent);
+            background: #fffdf8;
+        }
+        .stepper-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            border: none;
+            background: var(--bg-elevated);
+            color: var(--primary);
+            font-size: 22px;
+            font-weight: 700;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.15s ease, transform 0.05s ease;
+            font-family: inherit;
+            line-height: 1;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .stepper-btn:hover {
+            background: rgba(245, 184, 0, 0.15);
+        }
+        .stepper-btn:active {
+            background: var(--accent);
+            color: white;
+            transform: scale(0.95);
+        }
+        .stepper-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+        .stepper-minus {
+            color: var(--danger);
+        }
+        .stepper-plus {
+            color: var(--success);
+        }
+        .score-stepper.disabled {
+            opacity: 0.6;
+        }
+        .score-stepper.disabled .stepper-btn {
+            pointer-events: none;
+        }
+        
 
         textarea {
             transition: all 0.2s ease;
@@ -627,11 +712,33 @@
             body:not(.force-desktop):not(.force-tablet) .panel-title { font-size: 14px; }
             body:not(.force-desktop):not(.force-tablet) .section-title { font-size: 12px; }
             body:not(.force-desktop):not(.force-tablet) .match-title { font-size: 12px; }
-            body:not(.force-desktop):not(.force-tablet) .match-row { flex-wrap: wrap; gap: 6px; }
+            /* Match-row trên mobile: flex column để stepper không tràn */
+            body:not(.force-desktop):not(.force-tablet) .match-row { 
+                display: flex; 
+                flex-direction: column; 
+                gap: 8px; 
+                align-items: center;
+            }
+            body:not(.force-desktop):not(.force-tablet) .match-row .vs-text {
+                font-size: 12px;
+                color: var(--text-light);
+                font-weight: 600;
+                letter-spacing: 0.1em;
+            }
             body:not(.force-desktop):not(.force-tablet) .player-name { font-size: 12px; min-width: 100px; flex: 1; }
             body:not(.force-desktop):not(.force-tablet) .score-input {
                 width: 56px !important; height: 48px !important;
                 font-size: 22px !important; font-weight: 700;
+            }
+            /* Score stepper - to hơn cho mobile touch */
+            body:not(.force-desktop):not(.force-tablet) .score-stepper .score-input {
+                width: 64px !important; height: 52px !important;
+                font-size: 24px !important;
+            }
+            body:not(.force-desktop):not(.force-tablet) .stepper-btn {
+                width: 52px !important;
+                min-height: 52px !important;
+                font-size: 26px !important;
             }
             body:not(.force-desktop):not(.force-tablet) .btn { padding: 12px 18px; font-size: 12px; width: 100%; }
             body:not(.force-desktop):not(.force-tablet) .btn-small { padding: 10px 14px; font-size: 11px; }
@@ -673,11 +780,22 @@
         body.force-mobile .panel-title { font-size: 14px; }
         body.force-mobile .section-title { font-size: 12px; }
         body.force-mobile .match-title { font-size: 12px; }
-        body.force-mobile .match-row { flex-wrap: wrap; gap: 6px; }
+        body.force-mobile .match-row { 
+            display: flex; flex-direction: column; gap: 8px; align-items: center;
+        }
+        body.force-mobile .match-row .vs-text {
+            font-size: 12px; color: var(--text-light); font-weight: 600; letter-spacing: 0.1em;
+        }
         body.force-mobile .player-name { font-size: 12px; min-width: 100px; flex: 1; }
         body.force-mobile .score-input {
             width: 56px !important; height: 48px !important;
             font-size: 22px !important; font-weight: 700;
+        }
+        body.force-mobile .score-stepper .score-input {
+            width: 64px !important; height: 52px !important; font-size: 24px !important;
+        }
+        body.force-mobile .stepper-btn {
+            width: 52px !important; min-height: 52px !important; font-size: 26px !important;
         }
         body.force-mobile .btn { padding: 12px 18px; font-size: 12px; width: 100%; }
         body.force-mobile .btn-small { padding: 10px 14px; font-size: 11px; }
@@ -887,7 +1005,7 @@
             font-weight: 600;
         }
         
-        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.12) ═══ */
+        /* ═══ MOBILE RESPONSIVE cho các UI mới (v5.13) ═══ */
         /* Cover cả @media và force-mobile */
         @media (max-width: 767px) {
             body:not(.force-desktop):not(.force-tablet) .player-row-header {
@@ -1092,7 +1210,7 @@
                     <ellipse cx="40" cy="22" rx="12" ry="6" fill="#ffd24d" opacity="0.5"/>
                 </svg>
                 11NCT PICKLEBALL TOURNAMENT PRO 
-                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.12 ⚡</span>
+                <span style="font-size: 0.6em; color: var(--accent); border: 1px solid var(--accent); padding: 2px 8px; border-radius: 2px; letter-spacing: 0.05em;">v5.13 ⚡</span>
             </div>
             
             <!-- Device Mode Selector -->
@@ -1538,9 +1656,17 @@
                             <div class="player-name">BẢO + NHƯ</div>
                         </div>
                         <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t1_s1" value="7" min="0" max="7" />
+                            <div class="score-stepper" data-input-id="r1_t1_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t1_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t1_s1" value="7" min="0" max="7" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t1_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                             <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t1_s2" value="0" min="0" max="11" />
+                            <div class="score-stepper" data-input-id="r1_t1_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t1_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t1_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t1_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                         </div>
                     </div>
 
@@ -1552,9 +1678,17 @@
                             <div class="player-name">ĐỈNH + THƠ</div>
                         </div>
                         <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t2_s1" value="7" min="0" max="7" />
+                            <div class="score-stepper" data-input-id="r1_t2_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t2_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t2_s1" value="7" min="0" max="7" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t2_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                             <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t2_s2" value="0" min="0" max="11" />
+                            <div class="score-stepper" data-input-id="r1_t2_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t2_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t2_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t2_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                         </div>
                     </div>
 
@@ -1576,9 +1710,17 @@
                             <div class="player-name" id="r1_t3_p2">VINH + ?</div>
                         </div>
                         <div class="match-row">
-                            <input type="number" class="score-input" id="r1_t3_s1" value="7" min="0" max="7" />
+                            <div class="score-stepper" data-input-id="r1_t3_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t3_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t3_s1" value="7" min="0" max="7" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t3_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                             <div class="vs-text">vs</div>
-                            <input type="number" class="score-input" id="r1_t3_s2" value="0" min="0" max="11" />
+                            <div class="score-stepper" data-input-id="r1_t3_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t3_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t3_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t3_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1683,9 +1825,17 @@
                         <div class="player-name" id="r3_t1_p2">? + ?</div>
                     </div>
                     <div class="match-row">
-                        <input type="number" class="score-input" id="r3_t1_s1" value="11" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r3_t1_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r3_t1_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r3_t1_s1" value="11" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r3_t1_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                         <div class="vs-text">vs</div>
-                        <input type="number" class="score-input" id="r3_t1_s2" value="0" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r3_t1_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r3_t1_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r3_t1_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r3_t1_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                     </div>
                 </div>
 
@@ -1697,9 +1847,17 @@
                         <div class="player-name" id="r3_t2_p2">? + ?</div>
                     </div>
                     <div class="match-row">
-                        <input type="number" class="score-input" id="r3_t2_s1" value="11" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r3_t2_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r3_t2_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r3_t2_s1" value="11" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r3_t2_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                         <div class="vs-text">vs</div>
-                        <input type="number" class="score-input" id="r3_t2_s2" value="0" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r3_t2_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r3_t2_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r3_t2_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r3_t2_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                     </div>
                 </div>
 
@@ -1746,9 +1904,17 @@
                         <div class="player-name" id="r4_t1_p2">? + ?</div>
                     </div>
                     <div class="match-row">
-                        <input type="number" class="score-input" id="r4_t1_s1" value="11" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r4_t1_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r4_t1_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r4_t1_s1" value="11" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r4_t1_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                         <div class="vs-text">vs</div>
-                        <input type="number" class="score-input" id="r4_t1_s2" value="0" min="0" max="11" />
+                        <div class="score-stepper" data-input-id="r4_t1_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r4_t1_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r4_t1_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r4_t1_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                     </div>
                 </div>
 
@@ -1842,7 +2008,7 @@
                 this.males = maleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
                 this.females = femaleInput.split(',').map(n => n.trim().toUpperCase()).filter(n => n);
 
-                // === VALIDATION v5.12 ===
+                // === VALIDATION v5.13 ===
                 const validation = this.validatePlayers(this.males, this.females);
                 if (!validation.valid) {
                     this.showStatus(`⚠️ ${validation.message}`, 'error');
@@ -1875,7 +2041,7 @@
                 this.showStatus(`✅ Đã tải danh sách ${validation.N} VĐV - ${validation.numMatches} trận đấu`, 'success');
             }
 
-            // === VALIDATION CORE v5.12 ===
+            // === VALIDATION CORE v5.13 ===
             validatePlayers(males, females) {
                 const M = males.length;
                 const F = females.length;
@@ -1910,7 +2076,7 @@
                 return { valid: true, numPairs, numMatches, N, M, F };
             }
 
-            // === GHÉP CẶP V1 (CORE LOGIC v5.12) ===
+            // === GHÉP CẶP V1 (CORE LOGIC v5.13) ===
             pairUpRound1(males, females) {
                 const validation = this.validatePlayers(males, females);
                 if (!validation.valid) return validation;
@@ -2078,7 +2244,7 @@
                     return;
                 }
 
-                // === SỬ DỤNG LOGIC v5.12 ===
+                // === SỬ DỤNG LOGIC v5.13 ===
                 const result = this.pairUpRound1(this.males, this.females);
                 if (!result.valid) {
                     container.innerHTML = `<div style="color: var(--danger); padding: 20px; text-align: center;">❌ ${result.message}</div>`;
@@ -2105,9 +2271,17 @@
                                 <div class="player-name" id="r1_t${matchNum}_p2">${pairBStr}</div>
                             </div>
                             <div class="match-row">
-                                <input type="number" class="score-input" id="r1_t${matchNum}_s1" value="7" min="0" max="7" />
+                                <div class="score-stepper" data-input-id="r1_t${matchNum}_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t${matchNum}_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t${matchNum}_s1" value="7" min="0" max="7" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t${matchNum}_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                                 <div class="vs-text">vs</div>
-                                <input type="number" class="score-input" id="r1_t${matchNum}_s2" value="0" min="0" max="7" />
+                                <div class="score-stepper" data-input-id="r1_t${matchNum}_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r1_t${matchNum}_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r1_t${matchNum}_s2" value="0" min="0" max="7" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r1_t${matchNum}_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                             </div>
                         </div>
                     `;
@@ -2175,7 +2349,7 @@
                 this.showStatus('✅ Vòng 1 lưu thành công! Vòng 2 đã cập nhật!', 'success');
             }
 
-            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.12 generic)
+            // Xác nhận các trận đã đấu để ghép cặp người mượn vào trận sau (v5.13 generic)
             confirmRound1Trans3() {
                 if (!this.r1Matches || this.r1Matches.length === 0) {
                     this.showStatus('⚠️ Chưa có cấu hình trận đấu!', 'error');
@@ -2396,7 +2570,7 @@
                 `}).join('');
                 document.getElementById('round2RankingTable').innerHTML = tableHtml;
 
-                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.12) ===
+                // === BƯỚC 8: GHÉP CẶP VÒNG 2 (DYNAMIC v5.13) ===
                 // Logic: A1+AN vs A2+A(N-1), A3+A(N-2) vs A4+A(N-3), ...
                 // Số trận = ceil(N/4), số cặp = N/2 (nếu N chẵn) hoặc (N+1)/2 (nếu N lẻ)
                 // Người lẻ giữa bảng → ghép với Nữ xuất sắc nhất
@@ -2405,7 +2579,7 @@
 
             // === GHÉP CẶP V2 - HỖ TRỢ N ĐỘNG ===
             createRound2Pairs(ranked) {
-                // === LOGIC MỚI v5.12: Mạnh Nam + Yếu Nữ (giống V3) ===
+                // === LOGIC MỚI v5.13: Mạnh Nam + Yếu Nữ (giống V3) ===
                 // Sắp xếp Nam và Nữ riêng theo hiệu số V1
                 const sortFn = (a, b) => {
                     if (b.v1 !== a.v1) return b.v1 - a.v1;
@@ -2499,9 +2673,17 @@
                                 <div class="player-name" id="r2_t${matchNum}_p2">${pairBStr}</div>
                             </div>
                             <div class="match-row">
-                                <input type="number" class="score-input" id="r2_t${matchNum}_s1" value="11" min="0" max="11" />
+                                <div class="score-stepper" data-input-id="r2_t${matchNum}_s1">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r2_t${matchNum}_s1', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r2_t${matchNum}_s1" value="11" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r2_t${matchNum}_s1', 1)" aria-label="Tăng">+</button>
+                            </div>
                                 <div class="vs-text">vs</div>
-                                <input type="number" class="score-input" id="r2_t${matchNum}_s2" value="0" min="0" max="11" />
+                                <div class="score-stepper" data-input-id="r2_t${matchNum}_s2">
+                                <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('r2_t${matchNum}_s2', -1)" aria-label="Giảm">−</button>
+                                <input type="number" class="score-input" id="r2_t${matchNum}_s2" value="0" min="0" max="11" inputmode="numeric" pattern="[0-9]*" />
+                                <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('r2_t${matchNum}_s2', 1)" aria-label="Tăng">+</button>
+                            </div>
                             </div>
                         </div>
                     `;
@@ -2868,7 +3050,7 @@
             }
 
             displayRound3Rankings() {
-                // === LOGIC MỚI v5.12: 4 Nam + 4 Nữ tốt nhất ===
+                // === LOGIC MỚI v5.13: 4 Nam + 4 Nữ tốt nhất ===
                 // Sắp xếp theo: Hiệu số (V1+V2) > Thắng > Thua thấp
                 const sortFn = (a, b) => {
                     const totalA = a.v1 + a.v2;
@@ -3168,6 +3350,46 @@
                     container.innerHTML = '';
                 }, 4000);
             }
+
+            // ═══════════════════════════════════════════════════════════
+            // === SCORE STEPPER HELPER (v5.13) ===
+            // Nút +/- cho input điểm - user-friendly cho mobile
+            // ═══════════════════════════════════════════════════════════
+            
+            renderScoreStepper(inputId, value = '', min = 0, max = 21) {
+                const val = value === '' || value === null || value === undefined ? '' : value;
+                return `
+                    <div class="score-stepper" data-input-id="${inputId}">
+                        <button type="button" class="stepper-btn stepper-minus" onclick="app.stepScore('${inputId}', -1)" aria-label="Giảm điểm">−</button>
+                        <input type="number" class="score-input" id="${inputId}" value="${val}" min="${min}" max="${max}" placeholder="0" inputmode="numeric" pattern="[0-9]*" />
+                        <button type="button" class="stepper-btn stepper-plus" onclick="app.stepScore('${inputId}', 1)" aria-label="Tăng điểm">+</button>
+                    </div>
+                `;
+            }
+            
+            stepScore(inputId, delta) {
+                const el = document.getElementById(inputId);
+                if (!el || el.disabled) return;
+                const min = parseInt(el.min || '0');
+                const max = parseInt(el.max || '21');
+                let val = parseInt(el.value);
+                if (isNaN(val)) val = 0;
+                val = Math.max(min, Math.min(max, val + delta));
+                el.value = val;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                // Visual feedback
+                el.style.background = '#fffcf0';
+                setTimeout(() => { el.style.background = ''; }, 150);
+            }
+            
+            disableStepper(inputId) {
+                const el = document.getElementById(inputId);
+                if (!el) return;
+                el.disabled = true;
+                const stepper = el.closest('.score-stepper');
+                if (stepper) stepper.classList.add('disabled');
+            }
+            
 
             // ═══════════════════════════════════════════════════════════
             // === SCHEDULE GENERATOR (Tab 1) ===
@@ -4598,9 +4820,9 @@
                                 </div>
                                 ${isBye ? '<div style="font-size: 12px; color: var(--text-light); font-style: italic;">(Cặp BYE - được điểm tối đa 11-0)</div>' : `
                                 <div class="match-row">
-                                    <input type="number" class="score-input" id="swiss_r${roundNum}_m${m.index}_sa" value="" min="0" max="21" placeholder="0" />
+                                    ${this.renderScoreStepper(`swiss_r${roundNum}_m${m.index}_sa`, '', 0, 21)}
                                     <div class="vs-text">vs</div>
-                                    <input type="number" class="score-input" id="swiss_r${roundNum}_m${m.index}_sb" value="" min="0" max="21" placeholder="0" />
+                                    ${this.renderScoreStepper(`swiss_r${roundNum}_m${m.index}_sb`, '', 0, 21)}
                                 </div>
                                 `}
                             </div>
@@ -4723,11 +4945,10 @@
                 
                 roundData.completed = true;
                 
-                // Disable inputs của lượt này
+                // Disable inputs của lượt này (bao gồm stepper container)
                 matches.forEach(m => {
                     ['sa', 'sb'].forEach(suffix => {
-                        const el = document.getElementById(`swiss_r${roundNum}_m${m.index}_${suffix}`);
-                        if (el) el.disabled = true;
+                        this.disableStepper(`swiss_r${roundNum}_m${m.index}_${suffix}`);
                     });
                 });
                 
@@ -4870,9 +5091,9 @@
                         <div class="match-group" id="swiss_bk_${bk.idx}">
                             <div class="match-title">Bán Kết ${bk.idx}: <strong>${bk.pairA.p1.name}+${bk.pairA.p2.name}</strong> vs <strong>${bk.pairB.p1.name}+${bk.pairB.p2.name}</strong></div>
                             <div class="match-row">
-                                <input type="number" class="score-input" id="swiss_bk${bk.idx}_sa" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper(`swiss_bk${bk.idx}_sa`, '', 0, 21)}
                                 <div class="vs-text">vs</div>
-                                <input type="number" class="score-input" id="swiss_bk${bk.idx}_sb" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper(`swiss_bk${bk.idx}_sb`, '', 0, 21)}
                             </div>
                         </div>
                     `;
@@ -4924,11 +5145,10 @@
                 s.finalMatch = { pairA: w1, pairB: w2, scoreA: null, scoreB: null };
                 s.thirdPlaceMatch = { pairA: l1, pairB: l2, scoreA: null, scoreB: null };
                 
-                // Disable Bán Kết inputs
+                // Disable Bán Kết inputs (bao gồm stepper)
                 s.semifinals.forEach(bk => {
                     ['sa', 'sb'].forEach(suf => {
-                        const el = document.getElementById(`swiss_bk${bk.idx}_${suf}`);
-                        if (el) el.disabled = true;
+                        this.disableStepper(`swiss_bk${bk.idx}_${suf}`);
                     });
                 });
                 
@@ -4945,9 +5165,9 @@
                                 <strong>${s.thirdPlaceMatch.pairB.p1.name}+${s.thirdPlaceMatch.pairB.p2.name}</strong>
                             </div>
                             <div class="match-row">
-                                <input type="number" class="score-input" id="swiss_3rd_sa" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper('swiss_3rd_sa', '', 0, 21)}
                                 <div class="vs-text">vs</div>
-                                <input type="number" class="score-input" id="swiss_3rd_sb" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper('swiss_3rd_sb', '', 0, 21)}
                             </div>
                         </div>
                     </div>
@@ -4963,9 +5183,9 @@
                                 <strong>${s.finalMatch.pairB.p1.name}+${s.finalMatch.pairB.p2.name}</strong>
                             </div>
                             <div class="match-row">
-                                <input type="number" class="score-input" id="swiss_final_sa" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper('swiss_final_sa', '', 0, 21)}
                                 <div class="vs-text">vs</div>
-                                <input type="number" class="score-input" id="swiss_final_sb" value="" min="0" max="21" placeholder="0" />
+                                ${this.renderScoreStepper('swiss_final_sb', '', 0, 21)}
                             </div>
                         </div>
                         
@@ -5014,10 +5234,9 @@
                 const third = t_sa > t_sb ? s.thirdPlaceMatch.pairA : s.thirdPlaceMatch.pairB;
                 const fourth = t_sa > t_sb ? s.thirdPlaceMatch.pairB : s.thirdPlaceMatch.pairA;
                 
-                // Disable inputs
+                // Disable inputs (bao gồm stepper)
                 ['swiss_final_sa', 'swiss_final_sb', 'swiss_3rd_sa', 'swiss_3rd_sb'].forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) el.disabled = true;
+                    this.disableStepper(id);
                 });
                 
                 const html = `
@@ -5190,7 +5409,7 @@
             // Khởi tạo player rows tab Swiss Tournament
             app.renderSwissPlayerRows('male', app.getDefaultMaleData());
             app.renderSwissPlayerRows('female', app.getDefaultFemaleData());
-            app.showStatus('✅ Ứng dụng v5.12 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
+            app.showStatus('✅ Ứng dụng v5.13 sẵn sàng! Vòng Bảng Swiss System đã có', 'info');
         });
     </script>
 </body>
